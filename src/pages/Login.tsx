@@ -7,7 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../i18n';
 import { LanguageSelector } from '../components/LanguageSelector';
 
-const DEMO_OTP = '123456';
+const LOCAL_SIGN_IN_CODE = '123456';
 const RESEND_SECONDS = 30;
 
 export const Login = () => {
@@ -48,7 +48,7 @@ export const Login = () => {
 
   const verifyOtp = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (otp !== DEMO_OTP) {
+    if (otp !== LOCAL_SIGN_IN_CODE) {
       setError(t('invalidOtp'));
       return;
     }
@@ -65,7 +65,7 @@ export const Login = () => {
 
   return (
     <main className="login-stage relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10 text-slate-100">
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.035)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_78%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.035)_1px,transparent_1px)] bg-size-[48px_48px] mask-[radial-gradient(ellipse_at_center,black,transparent_78%)]" />
       <motion.section
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}

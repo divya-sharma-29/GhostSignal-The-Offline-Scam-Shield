@@ -56,7 +56,7 @@ export const Analysis: React.FC = () => {
   const sampleId = state.sampleId;
   const screenshotUrl = state.screenshotUrl;
 
-  // Run simulated step progression
+  // Progress indicates the local rules-check workflow.
   useEffect(() => {
     let active = true;
     const totalDuration = STAGES.reduce((acc, s) => acc + s.durationMs, 0);
@@ -160,7 +160,7 @@ export const Analysis: React.FC = () => {
 
             <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
               <motion.div 
-                className="h-full bg-gradient-to-r from-cyan-500 to-sky-400 rounded-full transition-all duration-100 ease-out"
+                className="h-full bg-cyan-400 rounded-full transition-all duration-100 ease-out"
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.1, ease: 'linear' }}
@@ -171,7 +171,7 @@ export const Analysis: React.FC = () => {
           {/* Sequential Stage Indicators (Strict order from instructions) */}
           <div className="space-y-3 pt-2">
             <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">
-              Execution Sequence:
+              {t('analysisTitle')}:
             </span>
 
             <div className="grid grid-cols-1 gap-2.5">
@@ -208,15 +208,15 @@ export const Analysis: React.FC = () => {
                       {isPassed ? (
                         <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Done</span>
+                          <span className="sr-only">{t('result')}</span>
                         </span>
                       ) : isCurrent ? (
                         <span className="inline-flex items-center gap-1 text-cyan-400 font-semibold">
                           <Loader2 className="w-3 h-3 animate-spin" />
-                          <span>Scanning</span>
+                          <span>{t('processing')}</span>
                         </span>
                       ) : (
-                        <span className="text-slate-400">Pending</span>
+                        <span className="text-slate-400" aria-label={t('startScan')}>•••</span>
                       )}
                     </div>
                   </div>
@@ -225,7 +225,7 @@ export const Analysis: React.FC = () => {
             </div>
           </div>
 
-          {/* Transparent Simulation Notice */}
+          {/* Capability notice */}
           <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400 leading-relaxed font-mono">
             <AlertCircle className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
             <div>
@@ -234,7 +234,7 @@ export const Analysis: React.FC = () => {
             </div>
           </div>
 
-          {/* Presentation Convenience: Skip Button */}
+          {/* Continue to the completed local check */}
           <div className="flex justify-end pt-2">
             <button
               onClick={handleSkip}

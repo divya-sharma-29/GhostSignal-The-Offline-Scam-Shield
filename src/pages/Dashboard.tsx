@@ -36,7 +36,7 @@ export const Dashboard = () => {
         <section aria-labelledby="recent-scans-heading">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium uppercase text-slate-500">Local records</p>
+              <p className="text-xs font-medium uppercase text-slate-500">{t('history')}</p>
               <h2 id="recent-scans-heading" className="mt-1 text-lg font-semibold text-white">{t('recentScans')}</h2>
             </div>
             <Link to="/history" className="inline-flex items-center gap-1 text-sm text-cyan-300 hover:text-cyan-200">{t('allHistory')} <ArrowRight className="h-4 w-4" /></Link>
@@ -61,7 +61,7 @@ export const Dashboard = () => {
           ) : (
             <div className="border-y border-slate-800 py-10 text-center">
               <p className="text-sm text-slate-300">{t('noScans')}</p>
-              <p className="mt-1 text-xs text-slate-500">Start a scan to see your local results here.</p>
+              <p className="mt-1 text-xs text-slate-500">{t('noScans')}</p>
             </div>
           )}
         </section>
@@ -70,7 +70,7 @@ export const Dashboard = () => {
           <section className="border-t-2 border-cyan-500 py-4">
             <div className="flex items-center gap-2 text-white"><LockKeyhole className="h-4 w-4 text-cyan-300" /><h2 className="text-sm font-semibold">{t('privacy')}</h2></div>
             <p className="mt-2 text-sm leading-6 text-slate-400">{t('offlineUnverified')}</p>
-            <Link to="/privacy" className="mt-3 inline-flex items-center gap-1 text-sm text-cyan-300 hover:text-cyan-200">Privacy & offline details <ArrowRight className="h-4 w-4" /></Link>
+            <Link to="/privacy" className="mt-3 inline-flex items-center gap-1 text-sm text-cyan-300 hover:text-cyan-200">{t('privacy')} <ArrowRight className="h-4 w-4" /></Link>
           </section>
           <section className="border-t border-slate-800 py-4">
             <div className="flex items-center gap-2 text-white"><Phone className="h-4 w-4 text-rose-300" /><h2 className="text-sm font-semibold">{t('helpTitle')}</h2></div>
@@ -80,14 +80,14 @@ export const Dashboard = () => {
           <section className="border-t border-slate-800 py-4">
             <div className="flex items-center gap-2 text-white"><ShieldCheck className="h-4 w-4 text-emerald-300" /><h2 className="text-sm font-semibold">{t('scanner')}</h2></div>
             <ol className="mt-4 space-y-3 text-sm text-slate-400">
-              <li className="flex gap-3"><span className="font-mono text-cyan-300">01</span>Paste text or add a screenshot.</li>
-              <li className="flex gap-3"><span className="font-mono text-cyan-300">02</span>Review the local rules-based risk assessment.</li>
-              <li className="flex gap-3"><span className="font-mono text-cyan-300">03</span>See the phrases, reasons, and safety actions.</li>
+              <li className="flex gap-3"><span className="font-mono text-cyan-300">01</span>{t('pasteMessage')} · {t('uploadScreenshot')}</li>
+              <li className="flex gap-3"><span className="font-mono text-cyan-300">02</span>{t('localRules')}</li>
+              <li className="flex gap-3"><span className="font-mono text-cyan-300">03</span>{t('explanation')} · {t('recommendations')}</li>
             </ol>
           </section>
           <div className="flex items-start gap-3 border-t border-slate-800 py-4 text-xs leading-5 text-slate-500">
             <WifiOff className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
-              <p>Designed for offline use. Network isolation has not been technically verified.</p>
+              <p>{t('offlineUnverified')}</p>
           </div>
         </aside>
       </div>

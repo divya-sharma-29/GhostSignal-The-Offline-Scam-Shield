@@ -115,6 +115,23 @@ export function getFlagLabel(language: LanguageCode, category: keyof typeof flag
   return flagLabels[language][category];
 }
 
+const sampleLabels: Record<LanguageCode, [string, string, string]> = {
+  en: ['Bank impersonation', 'UPI payment pressure', 'Normal appointment'],
+  hi: ['बैंक की नकल', 'UPI भुगतान का दबाव', 'सामान्य अपॉइंटमेंट'],
+  bn: ['ব্যাংকের ছদ্মবেশ', 'UPI পেমেন্টের চাপ', 'সাধারণ অ্যাপয়েন্টমেন্ট'],
+  mr: ['बँकेची नक्कल', 'UPI पेमेंटचा दबाव', 'सामान्य भेटीची वेळ'],
+  ta: ['வங்கி ஆள்மாறாட்டம்', 'UPI பண அழுத்தம்', 'சாதாரண சந்திப்பு'],
+  te: ['బ్యాంక్ వేషధారణ', 'UPI చెల్లింపు ఒత్తిడి', 'సాధారణ అపాయింట్‌మెంట్'],
+  kn: ['ಬ್ಯಾಂಕ್ ಸೋಗು', 'UPI ಪಾವತಿ ಒತ್ತಡ', 'ಸಾಮಾನ್ಯ ಭೇಟಿಯ ಸಮಯ'],
+  ml: ['ബാങ്ക് ആൾമാറാട്ടം', 'UPI പണമിടപാട് സമ്മർദ്ദം', 'സാധാരണ കൂടിക്കാഴ്ച'],
+  gu: ['બેંકની નકલ', 'UPI ચુકવણીનું દબાણ', 'સામાન્ય મુલાકાત'],
+  pa: ['ਬੈਂਕ ਦੀ ਨਕਲ', 'UPI ਭੁਗਤਾਨ ਦਾ ਦਬਾਅ', 'ਆਮ ਮੁਲਾਕਾਤ']
+};
+
+export function getSampleLabel(language: LanguageCode, index: number) {
+  return sampleLabels[language][index] ?? sampleLabels.en[0];
+}
+
 interface LanguageContextValue {
   language: LanguageCode;
   setLanguage: (language: LanguageCode) => void;

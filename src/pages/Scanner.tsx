@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SAMPLE_MESSAGES } from '../data/sampleMessages';
-import { LANGUAGES, useLanguage } from '../i18n';
+import { getSampleLabel, LANGUAGES, useLanguage } from '../i18n';
 import { 
   FileText, 
   Image as ImageIcon, 
@@ -183,7 +183,7 @@ export const Scanner: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-            {SAMPLE_MESSAGES.slice(0, 3).map(sample => (
+            {SAMPLE_MESSAGES.slice(0, 3).map((sample, index) => (
               <button
                 key={sample.id}
                 onClick={() => loadSample(sample.id)}
@@ -194,13 +194,13 @@ export const Scanner: React.FC = () => {
                 }`}
               >
                 <div className="flex items-center justify-between gap-1 mb-1">
-                  <span className="font-semibold truncate">{sample.name.split(':')[1] || sample.name}</span>
+                  <span className="font-semibold truncate">{getSampleLabel(language, index)}</span>
                   <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded font-bold ${
                     sample.riskLevel === 'HIGH' ? 'text-red-400 bg-red-950/60' :
                     sample.riskLevel === 'MEDIUM' ? 'text-amber-300 bg-amber-950/60' :
                     'text-emerald-400 bg-emerald-950/60'
                   }`}>
-                    {sample.riskLevel}
+                    {sample.riskLevel === 'HIGH' ? t('riskHigh') : sample.riskLevel === 'MEDIUM' ? t('riskMedium') : t('riskLow')}
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400 line-clamp-1 italic">
@@ -290,11 +290,9 @@ export const Scanner: React.FC = () => {
                 <div className="w-14 h-14 rounded-2xl bg-cyan-950/50 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mx-auto mb-4">
                   <UploadCloud className="w-7 h-7" />
                 </div>
-                <h3 className="text-base font-semibold text-white mb-1">
-                  Upload screenshot of suspicious message
-                </h3>
+                <h3 className="text-base font-semibold text-white mb-1">{t('uploadScreenshot')}</h3>
                 <p className="text-xs text-slate-400 max-w-sm mx-auto mb-4">
-                  Drag and drop an image here, or click to browse. Supports PNG and JPG/JPEG.
+                  {t('chooseImage')}
                 </p>
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 text-xs font-medium text-slate-300">
                   <ImageIcon className="w-3.5 h-3.5 text-cyan-400" />
@@ -318,7 +316,7 @@ export const Scanner: React.FC = () => {
                     className="text-xs text-slate-400 hover:text-red-400 flex items-center gap-1 transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>Remove</span>
+                    <span>{t('clearInput')}</span>
                   </button>
                 </div>
 
@@ -331,7 +329,7 @@ export const Scanner: React.FC = () => {
                   />
                 </div>
 
-                {/* Checkpoint 1 Note */}
+                {/* Screenshot text-recognition availability */}
                 <div className="flex items-start gap-2.5 p-3 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-400">
                   <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
                   <div>
@@ -355,7 +353,7 @@ export const Scanner: React.FC = () => {
               onClick={handleClear}
               className="w-1/2 sm:w-auto px-4 py-2.5 text-xs font-medium text-slate-300 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl transition-colors cursor-pointer"
             >
-              Reset
+              {t('clearInput')}
             </button>
 
             <button

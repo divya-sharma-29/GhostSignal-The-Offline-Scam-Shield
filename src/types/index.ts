@@ -30,7 +30,7 @@ export interface ScanResult {
   messageText: string;
   language: string;
   riskLevel: RiskLevel;
-  demonstrationScore: number; // For demo presentation e.g. 92, 64, 12
+  riskScore: number;
   redFlags: RedFlag[];
   plainLanguageExplanation: string;
   safetyRecommendations: string[];

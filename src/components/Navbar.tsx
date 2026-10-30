@@ -59,7 +59,7 @@ export const Navbar: React.FC = () => {
         <div className="mt-auto border-t border-slate-800 pt-4">
           <div className="mb-3 flex items-center gap-3 px-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-cyan-300"><ShieldCheck className="h-4 w-4" /></div>
-            <div className="min-w-0"><p className="text-xs font-medium text-slate-200">Account</p><p className="truncate text-xs text-slate-500">{user?.countryCode} ••••••{user?.phoneNumber.slice(-2)}</p></div>
+            <div className="min-w-0"><p className="text-xs font-medium text-slate-200">{t('phoneNumber')}</p><p className="truncate text-xs text-slate-500">{user?.countryCode} ••••••{user?.phoneNumber.slice(-2)}</p></div>
           </div>
           <button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-slate-400 transition hover:bg-slate-800/70 hover:text-white">
             <LogOut className="h-4 w-4" /> {t('logout')}

@@ -48,7 +48,7 @@ export const Help = () => {
         <div className="rounded-2xl border border-slate-700/80 bg-slate-900/50 p-5 sm:p-7">
           <p className="text-xs font-semibold uppercase text-cyan-300">Government of India</p>
           <h2 className="mt-2 text-xl font-semibold text-white">{t('reportingPortal')}</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-400">Use the official portal to report cybercrime. GhostSignal does not submit a complaint on your behalf.</p>
+          <p className="mt-2 text-sm leading-6 text-slate-400">{t('helpDescription')} {t('complaintNotFiled')}</p>
           <a href="https://cybercrime.gov.in/" target="_blank" rel="noreferrer" className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-lg bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 hover:bg-cyan-300">{t('reportingPortal')} <ArrowUpRight className="h-4 w-4" /></a>
           <p className="mt-5 border-t border-slate-700 pt-4 text-sm leading-6 text-slate-300">{t('smsUnverified')}</p>
         </div>

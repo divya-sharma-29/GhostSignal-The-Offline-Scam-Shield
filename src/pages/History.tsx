@@ -87,7 +87,7 @@ export const History: React.FC = () => {
               onClick={() => navigate('/privacy')}
               className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 transition hover:text-white"
             >
-              Privacy & Architecture
+              {t('privacy')}
             </button>
           </div>
         </div>
@@ -231,7 +231,7 @@ export const History: React.FC = () => {
 
                         {/* Plain language summary excerpt */}
                         <p className="text-xs text-slate-400 line-clamp-1 italic">
-                          {item.plainLanguageExplanation}
+                          {item.riskLevel === 'HIGH' ? t('riskSummaryHigh') : item.riskLevel === 'MEDIUM' ? t('riskSummaryMedium') : item.riskLevel === 'UNASSESSED' ? t('screenshotNotAssessed') : t('riskSummaryLow')}
                         </p>
                       </div>
 
@@ -260,109 +260,16 @@ export const History: React.FC = () => {
           </div>
         )}
 
-        {/* SECTION B: PRIVACY & ARCHITECTURE SECTION */}
-        {activeTab === 'privacy' && (
-          <div className="space-y-8">
-            {/* Core Privacy Directives */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-                  <Lock className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-bold text-white">Private by Design</h3>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                  The intended design keeps message processing on-device. Network isolation has not been independently verified.
-                </p>
-              </div>
-
-              <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-sky-950/60 border border-sky-500/30 flex items-center justify-center text-sky-400">
-                  <ServerOff className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-bold text-white">Local Storage</h3>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                  The mock login and scan history use this browser's local storage. This page does not claim that all network traffic or browser behavior has been audited.
-                </p>
-              </div>
-
-              <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-950/60 border border-blue-500/30 flex items-center justify-center text-blue-400">
-                  <WifiOff className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-bold text-white">Offline-First Goal</h3>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                  The intended product is designed to work without internet. This checkpoint has no offline cache and has not verified network isolation.
-                </p>
-              </div>
-
-              <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-950/60 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                  <EyeOff className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-bold text-white">No Unnecessary Collection</h3>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                  History is saved strictly inside your local browser instance via HTML5 Local Storage. You can clear all history with a single click at any time.
-                </p>
-              </div>
-            </div>
-
-            {/* Technical Integration Roadmap for Judges (Checkpoint 1 vs Checkpoint 2) */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 space-y-4">
-              <div className="flex items-center gap-2">
-                <Cpu className="w-5 h-5 text-cyan-400" />
-                <h3 className="text-base font-bold text-white">
-                  Technical Architecture Roadmap (Hackathon Checkpoint Status)
-                </h3>
-              </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                This build delivers the interactive workflows, responsive interface, sample messages, and explainable local keyword rules.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                <div className="p-4 rounded-xl bg-slate-950 border border-emerald-500/30 space-y-2">
-                  <div className="flex items-center gap-2 text-emerald-400 font-mono text-xs font-semibold">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>CHECKPOINT 1 (COMPLETED)</span>
-                  </div>
-                  <ul className="text-xs text-slate-300 space-y-1.5 font-mono">
-                    <li>✓ Complete 5-screen cyber UI architecture</li>
-                    <li>✓ Dual input methods (Text + Screenshot preview)</li>
-                    <li>✓ Sample messages and Indian language options</li>
-                    <li>✓ Explainable red flag decomposition engine</li>
-                    <li>✓ Inline categorized text highlight system</li>
-                    <li>✓ Persistent localStorage scan history</li>
-                    <li>✓ Browser online/offline status indicator</li>
-                  </ul>
-                </div>
-
-                <div className="p-4 rounded-xl bg-slate-950 border border-cyan-500/30 space-y-2">
-                  <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs font-semibold">
-                    <Cpu className="w-4 h-4" />
-                    <span>CHECKPOINT 2 (TARGET ROADMAP)</span>
-                  </div>
-                  <ul className="text-xs text-slate-300 space-y-1.5 font-mono">
-                    <li>→ Quantized SLM integration (ONNX Runtime Web)</li>
-                    <li>→ On-device OCR engine (Tesseract.js WebAssembly)</li>
-                    <li>→ Zero-cloud multi-lingual NLP weights</li>
-                    <li>→ Native PWA caching for offline hardware boot</li>
-                    <li>→ SMS broadcast listener hook (Android Kotlin bridge)</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Return to Scanner CTA */}
         <div className="flex items-center justify-between pt-4 border-t border-slate-800">
           <span className="text-xs text-slate-400 font-mono">
-            GhostSignal · Team The Vanguard
+            GhostSignal
           </span>
           <button
             onClick={() => navigate('/scanner')}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-xs font-bold transition-all shadow-[0_0_15px_rgba(6,182,212,0.25)] cursor-pointer"
           >
-            <span>Return to Scanner</span>
+            <span>{t('scanner')}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>

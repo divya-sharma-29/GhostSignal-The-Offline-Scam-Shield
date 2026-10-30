@@ -18,13 +18,13 @@ export function analyzeMessageInput(
       id: 'scan-' + Date.now(),
       timestamp: new Date().toISOString(),
       sourceType,
-      messageText: 'Screenshot uploaded. Text extraction is not available in this frontend checkpoint.',
+      messageText: 'Screenshot uploaded. Text recognition is not available.',
       language,
       riskLevel: 'UNASSESSED',
-      demonstrationScore: 0,
+      riskScore: 0,
       redFlags: [],
-      plainLanguageExplanation: 'The screenshot preview was saved, but GhostSignal does not include OCR in this checkpoint. No message text was assessed, so a risk level cannot be determined.',
-      safetyRecommendations: ['Paste the message text into the scanner for a simulated rules-based assessment. Do not treat this image-only result as evidence that the message is safe.'],
+      plainLanguageExplanation: 'The screenshot preview was saved, but text recognition is unavailable. No message text was assessed, so a risk level cannot be determined.',
+      safetyRecommendations: ['Paste the message text into the scanner for local keyword checks. Do not treat this image-only result as evidence that the message is safe.'],
       screenshotUrl
     };
   }
@@ -146,7 +146,7 @@ export function analyzeMessageInput(
   } else if (riskLevel === 'MEDIUM') {
     plainLanguageExplanation = `This message contains potential warning signs (${detectedFlags.map(f => f.title).join(', ')}) that deviate from standard communication practices. Proceed with caution.`;
   } else {
-    plainLanguageExplanation = 'No standard high-risk scam indicators (such as coercive deadlines, OTP demands, or suspicious payment requests) were detected in this demonstration analysis.';
+    plainLanguageExplanation = 'No standard high-risk scam indicators (such as coercive deadlines, OTP demands, or suspicious payment requests) were detected.';
   }
 
   const safetyRecommendations = riskLevel === 'HIGH'
@@ -175,7 +175,7 @@ export function analyzeMessageInput(
     messageText: trimmed,
     language,
     riskLevel,
-    demonstrationScore: score,
+    riskScore: score,
     redFlags: detectedFlags,
     plainLanguageExplanation,
     safetyRecommendations,

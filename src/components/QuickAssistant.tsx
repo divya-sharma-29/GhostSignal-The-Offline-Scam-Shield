@@ -31,7 +31,7 @@ interface RecognitionController {
 type RecognitionConstructor = new () => RecognitionController;
 
 const intentPhrases: Record<LanguageCode, Record<Intent, string[]>> = {
-  en: { scan: ['scan this message', 'check this message', 'check whether this message is fake', 'scan message'], screenshot: ['scan this screenshot', 'check this screenshot', 'upload screenshot'], explain: ['explain this result', 'explain this message', 'why is this dangerous'], read: ['read the warning', 'read this result', 'tell me what i should do'], language: ['change language', 'change my language'], help: ['contact cybercrime', 'open cybercrime help', 'open helpline'], history: ['show my previous scans', 'show scan history', 'open scan history'], home: ['go home', 'open dashboard', 'go to dashboard'] },
+  en: { scan: ['scan this message', 'check this message', 'check whether this message is fake', 'scan message'], screenshot: ['scan this screenshot', 'check this screenshot', 'upload screenshot'], explain: ['explain this result', 'explain this message', 'why is this dangerous'], read: ['read the warning', 'read this result', 'tell me what i should do'], language: ['change language', 'change my language'], help: ['contact cybercrime', 'open cybercrime help', 'open the cybercrime helpline', 'open helpline', 'report cybercrime'], history: ['show my previous scans', 'show scan history', 'open scan history'], home: ['go home', 'open dashboard', 'go to dashboard'] },
   hi: { scan: ['संदेश जांचें', 'यह संदेश जांचें', 'संदेश की जांच'], screenshot: ['स्क्रीनशॉट जांचें', 'स्क्रीनशॉट की जांच'], explain: ['नतीजा समझाएं', 'यह खतरनाक क्यों है'], read: ['चेतावनी सुनाएं', 'नतीजा पढ़ें', 'मुझे क्या करना चाहिए'], language: ['भाषा बदलें', 'भाषा हिंदी'], help: ['साइबर अपराध सहायता', 'हेल्पलाइन खोलें'], history: ['जांच इतिहास दिखाएं', 'पुरानी जांच दिखाएं'], home: ['डैशबोर्ड पर जाएं', 'घर जाएं'] },
   bn: { scan: ['বার্তা পরীক্ষা করুন', 'এই বার্তা পরীক্ষা'], screenshot: ['স্ক্রিনশট পরীক্ষা করুন'], explain: ['ফলাফল ব্যাখ্যা করুন', 'কেন বিপজ্জনক'], read: ['সতর্কতা পড়ুন', 'আমার কী করা উচিত'], language: ['ভাষা বদলান'], help: ['সাইবার অপরাধ সহায়তা', 'হেল্পলাইন খুলুন'], history: ['পরীক্ষার ইতিহাস দেখান'], home: ['ড্যাশবোর্ডে যান'] },
   mr: { scan: ['संदेश तपासा', 'हा संदेश तपासा'], screenshot: ['स्क्रीनशॉट तपासा'], explain: ['निकाल समजावून सांगा', 'हे धोकादायक का आहे'], read: ['सूचना वाचा', 'मी काय करू'], language: ['भाषा बदला'], help: ['सायबर गुन्हा मदत', 'हेल्पलाइन उघडा'], history: ['तपासणी इतिहास दाखवा'], home: ['डॅशबोर्डवर जा'] },
@@ -192,7 +192,7 @@ export const QuickAssistant = () => {
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
-            className="assistant-window mb-3 w-[min(21rem,calc(100vw-2rem))] p-4 shadow-2xl shadow-black/50"
+            className="assistant-window mb-3 max-h-[calc(100dvh-6rem)] w-[min(21rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain p-4 shadow-2xl shadow-black/50"
           >
             <div className="mb-3 flex items-start justify-between gap-3 border-b border-slate-800 pb-3">
               <div>
@@ -202,7 +202,7 @@ export const QuickAssistant = () => {
               <button onClick={() => setIsOpen(false)} aria-label="Close assistant" className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white"><X className="h-4 w-4" /></button>
             </div>
             <div className="mb-3 rounded-xl border border-cyan-900/80 bg-slate-950/60 p-3">
-              <button onClick={isListening ? () => recognitionRef.current?.stop() : startListening} className="flex min-h-14 w-full items-center justify-center gap-3 rounded-lg bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300">
+              <button onClick={isListening ? () => { recognitionRef.current?.abort(); setIsListening(false); setStatus(''); } : startListening} className="flex min-h-14 w-full items-center justify-center gap-3 rounded-lg bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300">
                 {isListening ? <Square className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
                 <span>{isListening ? t('stopListening') : t('startListening')}</span>
               </button>

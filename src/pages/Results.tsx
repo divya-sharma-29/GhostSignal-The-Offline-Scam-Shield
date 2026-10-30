@@ -6,7 +6,7 @@ import { RiskScore } from '../components/RiskScore';
 import { HighlightedMessage } from '../components/HighlightedMessage';
 import { RedFlagCard } from '../components/RedFlagCard';
 import { useScanHistory } from '../hooks/useScanHistory';
-import { useLanguage, type TranslationKey } from '../i18n';
+import { getFlagLabel, LANGUAGES, useLanguage, type TranslationKey } from '../i18n';
 import { useVoiceSettings } from '../hooks/useVoiceSettings';
 import { 
   ArrowLeft, 
@@ -52,15 +52,15 @@ export const Results: React.FC = () => {
 
   const handleCopyReport = () => {
     if (!currentResult) return;
-    const reportText = `[GhostSignal Scam Shield Report]
-Risk Level: ${currentResult.riskLevel} (${currentResult.demonstrationScore}/100)
-Message: "${currentResult.messageText}"
-Summary: ${currentResult.plainLanguageExplanation}
-Red Flags Detected: ${currentResult.redFlags.length}
-${currentResult.redFlags.map(f => `- ${f.title}: "${f.phrase}"`).join('\n')}
-Recommendations:
-${currentResult.safetyRecommendations.map(r => `* ${r}`).join('\n')}
-(Generated from sample data or local keyword rules; not an AI prediction.)`;
+    const reportText = `[GhostSignal]
+${t('result')}: ${t(currentResult.riskLevel === 'HIGH' ? 'riskHigh' : currentResult.riskLevel === 'MEDIUM' ? 'riskMedium' : currentResult.riskLevel === 'LOW' ? 'riskLow' : 'unassessed')} (${currentResult.riskScore}/100)
+${t('pastedText')}: "${currentResult.messageText}"
+${t('explanation')}: ${t(riskSummaryKey)}
+${t('redFlags')}: ${currentResult.redFlags.length}
+${currentResult.redFlags.map((flag) => `- ${getFlagLabel(language, flag.category)}: "${flag.phrase}"`).join('\n')}
+${t('recommendations')}:
+${recommendations.map((key) => `* ${t(key)}`).join('\n')}
+${t('riskNote')}`;
 
     navigator.clipboard.writeText(reportText).then(() => {
       setCopied(true);
@@ -83,9 +83,10 @@ ${currentResult.safetyRecommendations.map(r => `* ${r}`).join('\n')}
   })));
   if (currentResult.riskLevel === 'HIGH') safetyKeys.push('safetyOtp', 'safetyLink', 'contactBank');
   if (!safetyKeys.length) safetyKeys.push('safetyOtp', 'safetyBank');
+  const recommendations = Array.from(new Set(safetyKeys));
 
   const readResult = () => {
-    const spoken = `${t(riskSummaryKey)} ${safetyKeys.map((key) => t(key)).join(' ')}`;
+    const spoken = `${t(riskSummaryKey)} ${recommendations.map((key) => t(key)).join(' ')}`;
     setVoiceFeedback(speak(spoken, true) ? '' : t('voiceUnavailable'));
   };
 
@@ -108,7 +109,7 @@ ${currentResult.safetyRecommendations.map(r => `* ${r}`).join('\n')}
             </button>
             <span className="text-slate-600">/</span>
             <span className="text-xs font-mono text-cyan-400 font-semibold uppercase tracking-wider">
-              Screen 04 · Risk Assessment
+              {t('result')}
             </span>
           </div>
 
@@ -117,7 +118,7 @@ ${currentResult.safetyRecommendations.map(r => `* ${r}`).join('\n')}
             <button
               onClick={handleCopyReport}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-slate-300 transition-colors cursor-pointer"
-              title="Copy analysis breakdown"
+              title={t('copySummary')}
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{copied ? t('copiedSummary') : t('copySummary')}</span>
@@ -160,7 +161,7 @@ ${currentResult.safetyRecommendations.map(r => `* ${r}`).join('\n')}
 
             {/* Rules-based risk score */}
             <RiskScore
-              score={currentResult.demonstrationScore}
+              score={currentResult.riskScore}
               level={currentResult.riskLevel}
             />
           </div>
@@ -180,11 +181,11 @@ ${currentResult.safetyRecommendations.map(r => `* ${r}`).join('\n')}
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-cyan-400" />
               <h2 className="text-base font-bold text-white font-sans">
-                Submitted Message & In-Text Highlighting
+                {t('pastedText')}
               </h2>
             </div>
             <span className="text-xs text-slate-400 font-mono">
-              {currentResult.language} · {currentResult.sourceType === 'screenshot' ? t('sourceScreenshot') : t('sourceText')}
+              {LANGUAGES.find((item) => item.name === currentResult.language)?.native ?? currentResult.language} · {currentResult.sourceType === 'screenshot' ? t('sourceScreenshot') : t('sourceText')}
             </span>
           </div>
 
@@ -197,7 +198,7 @@ ${currentResult.safetyRecommendations.map(r => `* ${r}`).join('\n')}
                 className="w-16 h-16 object-cover rounded-lg border border-slate-700 shrink-0"
               />
               <div className="text-xs">
-                <span className="font-semibold text-slate-200 block">Screenshot Attached</span>
+                <span className="font-semibold text-slate-200 block">{t('sourceScreenshot')}</span>
                 <span className="text-slate-400">{t('ocrUnavailable')}</span>
               </div>
             </div>
@@ -205,7 +206,7 @@ ${currentResult.safetyRecommendations.map(r => `* ${r}`).join('\n')}
 
           {/* Inline Highlighted Message Component */}
           <HighlightedMessage
-            messageText={currentResult.messageText}
+            messageText={currentResult.riskLevel === 'UNASSESSED' ? t('screenshotNotAssessed') : currentResult.messageText}
             redFlags={currentResult.redFlags}
           />
         </div>
@@ -233,7 +234,7 @@ ${currentResult.safetyRecommendations.map(r => `* ${r}`).join('\n')}
               </h3>
             </div>
             <span className="text-xs text-slate-400 font-mono">
-              Explainable Rule Engine
+                {t('localRules')}
             </span>
           </div>
 
@@ -246,7 +247,7 @@ ${currentResult.safetyRecommendations.map(r => `* ${r}`).join('\n')}
           ) : currentResult.redFlags.length === 0 ? (
             <div className="p-6 rounded-xl bg-slate-950 border border-slate-800 text-center space-y-2">
               <ShieldCheck className="w-8 h-8 text-emerald-400 mx-auto" />
-              <h4 className="text-sm font-semibold text-slate-200">No Predefined Major Red Flags Detected</h4>
+              <h4 className="text-sm font-semibold text-slate-200">{t('noFlags')}</h4>
               <p className="text-xs text-slate-400 max-w-md mx-auto">{t('noFlags')} {t('riskSummaryLow')}</p>
             </div>
           ) : (
@@ -263,12 +264,12 @@ ${currentResult.safetyRecommendations.map(r => `* ${r}`).join('\n')}
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             <h3 className="text-base font-bold text-white font-sans">
-              Actionable Safety Recommendations
+              {t('recommendations')}
             </h3>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {safetyKeys.map((key, idx) => (
+            {recommendations.map((key, idx) => (
               <div
                 key={idx}
                 className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 text-xs text-slate-300 leading-relaxed"

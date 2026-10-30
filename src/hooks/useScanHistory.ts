@@ -13,7 +13,11 @@ export function useScanHistory() {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed: ScanResult[] = JSON.parse(stored);
-        setHistory(Array.isArray(parsed) ? parsed : []);
+        const savedRecords = Array.isArray(parsed)
+          ? parsed.filter((record) => !record.id.startsWith('seed-') && !(record as ScanResult & { isDemoSample?: boolean }).isDemoSample)
+          : [];
+        setHistory(savedRecords);
+        if (savedRecords.length !== parsed.length) localStorage.setItem(STORAGE_KEY, JSON.stringify(savedRecords));
       }
     } catch (e) {
       console.warn('Failed to access localStorage for scan history', e);
