@@ -15,7 +15,7 @@ async def scan_image(file: UploadFile = File(...)):
             raise HTTPException(413, "Image exceeds the configured size limit.")
         ocr = extract_text(data, file.content_type)
         if not ocr["text"]:
-            return {"extracted_text": "", "message": ocr["message"], "risk_level": "LOW", "risk_score": 0, "threats": [], "recommendations": ["No text was assessed. Do not treat this image-only result as evidence of safety."], "assessed": False}
+            return {"extracted_text": "", "message": ocr["message"], "risk_level": "UNASSESSED", "risk_score": 0, "threats": [], "recommendations": ["No text was assessed. Do not treat this image-only result as evidence of safety."], "assessed": False}
         result = run_scan(ocr["text"], "image")
         return {"extracted_text": ocr["text"], "assessed": True, **result}
     except RuntimeError as exc:
