@@ -1,33 +1,34 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ArrowRight, Clock3, LockKeyhole, Mic, ScanLine, ShieldCheck, WifiOff, ImageUp, Phone } from 'lucide-react';
 import { motion } from 'motion/react';
 import { RiskBadge } from '../components/RiskBadge';
 import { OfflineStatusBanner } from '../components/OfflineStatusBanner';
 import { useScanHistory } from '../hooks/useScanHistory';
 import { LanguageSelector } from '../components/LanguageSelector';
-import { useLanguage } from '../i18n';
+import { getDashboardCopy, useLanguage } from '../i18n';
 
 export const Dashboard = () => {
   const { history } = useScanHistory();
-  const { t } = useLanguage();
-  const navigate = useNavigate();
+  const { t, language } = useLanguage();
+  const dashboardCopy = getDashboardCopy(language);
   const recentScans = history.slice(0, 3);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-7 lg:px-10">
       <div className="mb-8 flex flex-wrap items-start justify-between gap-5">
         <div>
-          <p className="mb-2 text-xs font-medium uppercase text-cyan-300">The Offline Scam Shield</p>
-          <h1 className="text-3xl font-semibold text-white">{t('tagline')}</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">{t('scannerDescription')}</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-(--app-primary)">GhostSignal · The Offline Scam Shield</p>
+          <h1 className="text-3xl font-semibold text-white">{dashboardCopy.title}</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">{dashboardCopy.subtitle}</p>
+          <p className="mt-2 text-sm font-medium text-(--app-primary)">{t('tagline')}</p>
         </div>
         <LanguageSelector />
       </div>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
-        <Link to="/scanner" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-lg bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"><ScanLine className="h-5 w-5" />{t('startScan')}<ArrowRight className="h-4 w-4" /></Link>
-        <Link to="/scanner?mode=screenshot" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-lg border border-slate-600 bg-slate-900/70 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"><ImageUp className="h-5 w-5 text-cyan-300" />{t('uploadScreenshot')}</Link>
-        <button onClick={() => window.dispatchEvent(new Event('ghostsignal:open-assistant'))} className="inline-flex min-h-14 items-center justify-center gap-2 rounded-lg border border-cyan-700/70 bg-cyan-950/40 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-900/60"><Mic className="h-5 w-5" />{t('assistantName')}</button>
+        <Link to="/scanner" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl border border-(--app-border) bg-(--app-card) px-4 py-3 text-sm font-semibold text-(--app-text) shadow-sm transition hover:border-(--app-primary)"><ScanLine className="h-5 w-5 text-(--app-primary)" />{t('pastedText')}<ArrowRight className="h-4 w-4" /></Link>
+        <Link to="/scanner?mode=screenshot" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl border border-(--app-border) bg-(--app-card) px-4 py-3 text-sm font-semibold text-(--app-text) shadow-sm transition hover:border-(--app-primary)"><ImageUp className="h-5 w-5 text-(--app-primary)" />{t('uploadScreenshot')}</Link>
+        <Link to="/scanner?mode=voice" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl border border-(--app-border) bg-(--app-card) px-4 py-3 text-sm font-semibold text-(--app-text) shadow-sm transition hover:border-(--app-primary)"><Mic className="h-5 w-5 text-(--app-primary)" />{dashboardCopy.voiceAction}</Link>
       </div>
 
       <OfflineStatusBanner />

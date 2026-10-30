@@ -26,7 +26,7 @@ export interface HighlightSpan {
 export interface ScanResult {
   id: string;
   timestamp: string;
-  sourceType: 'text' | 'screenshot';
+  sourceType: 'text' | 'screenshot' | 'voice';
   messageText: string;
   language: string;
   riskLevel: RiskLevel;

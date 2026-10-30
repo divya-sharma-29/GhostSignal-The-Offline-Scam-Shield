@@ -132,6 +132,50 @@ export function getSampleLabel(language: LanguageCode, index: number) {
   return sampleLabels[language][index] ?? sampleLabels.en[0];
 }
 
+const themeLabels: Record<LanguageCode, { light: string; dark: string }> = {
+  en: { light: 'Switch to light theme', dark: 'Switch to dark theme' },
+  hi: { light: 'लाइट थीम चुनें', dark: 'डार्क थीम चुनें' },
+  bn: { light: 'লাইট থিম বেছে নিন', dark: 'ডার্ক থিম বেছে নিন' },
+  mr: { light: 'लाइट थीम निवडा', dark: 'डार्क थीम निवडा' },
+  ta: { light: 'ஒளி தீமைத் தேர்ந்தெடு', dark: 'இருள் தீமைத் தேர்ந்தெடு' },
+  te: { light: 'లైట్ థీమ్ ఎంచుకోండి', dark: 'డార్క్ థీమ్ ఎంచుకోండి' },
+  kn: { light: 'ಲೈಟ್ ಥೀಮ್ ಆಯ್ಕೆಮಾಡಿ', dark: 'ಡಾರ್ಕ್ ಥೀಮ್ ಆಯ್ಕೆಮಾಡಿ' },
+  ml: { light: 'ലൈറ്റ് തീം തിരഞ്ഞെടുക്കുക', dark: 'ഡാർക്ക് തീം തിരഞ്ഞെടുക്കുക' },
+  gu: { light: 'લાઇટ થીમ પસંદ કરો', dark: 'ડાર્ક થીમ પસંદ કરો' },
+  pa: { light: 'ਲਾਈਟ ਥੀਮ ਚੁਣੋ', dark: 'ਡਾਰਕ ਥੀਮ ਚੁਣੋ' }
+};
+
+export function getThemeSwitchLabel(language: LanguageCode, target: 'light' | 'dark') {
+  return themeLabels[language][target];
+}
+
+const dashboardCopy: Record<LanguageCode, { title: string; subtitle: string; voiceAction: string }> = {
+  en: { title: 'Your Digital Safety Centre', subtitle: 'Stay protected from suspicious messages, phishing and online scams.', voiceAction: 'Voice message' },
+  hi: { title: 'आपका डिजिटल सुरक्षा केंद्र', subtitle: 'संदिग्ध संदेशों, फ़िशिंग और ऑनलाइन धोखाधड़ी से सुरक्षित रहें।', voiceAction: 'आवाज़ से संदेश' },
+  bn: { title: 'আপনার ডিজিটাল নিরাপত্তা কেন্দ্র', subtitle: 'সন্দেহজনক বার্তা, ফিশিং এবং অনলাইন প্রতারণা থেকে সুরক্ষিত থাকুন।', voiceAction: 'কণ্ঠে বার্তা' },
+  mr: { title: 'तुमचे डिजिटल सुरक्षा केंद्र', subtitle: 'संशयास्पद संदेश, फिशिंग आणि ऑनलाइन फसवणुकीपासून सुरक्षित राहा.', voiceAction: 'आवाजातील संदेश' },
+  ta: { title: 'உங்கள் டிஜிட்டல் பாதுகாப்பு மையம்', subtitle: 'சந்தேகச் செய்திகள், ஃபிஷிங் மற்றும் இணைய மோசடிகளிலிருந்து பாதுகாப்பாக இருங்கள்.', voiceAction: 'குரல் செய்தி' },
+  te: { title: 'మీ డిజిటల్ భద్రత కేంద్రం', subtitle: 'అనుమానాస్పద సందేశాలు, ఫిషింగ్ మరియు ఆన్‌లైన్ మోసాల నుంచి రక్షణ పొందండి.', voiceAction: 'వాయిస్ సందేశం' },
+  kn: { title: 'ನಿಮ್ಮ ಡಿಜಿಟಲ್ ಸುರಕ್ಷತಾ ಕೇಂದ್ರ', subtitle: 'ಅನುಮಾನಾಸ್ಪದ ಸಂದೇಶಗಳು, ಫಿಷಿಂಗ್ ಮತ್ತು ಆನ್‌ಲೈನ್ ವಂಚನೆಗಳಿಂದ ಸುರಕ್ಷಿತರಾಗಿರಿ.', voiceAction: 'ಧ್ವನಿ ಸಂದೇಶ' },
+  ml: { title: 'നിങ്ങളുടെ ഡിജിറ്റൽ സുരക്ഷാ കേന്ദ്രം', subtitle: 'സംശയാസ്പദമായ സന്ദേശങ്ങൾ, ഫിഷിംഗ്, ഓൺലൈൻ തട്ടിപ്പുകൾ എന്നിവയിൽ നിന്ന് സുരക്ഷിതരാകുക.', voiceAction: 'ശബ്ദ സന്ദേശം' },
+  gu: { title: 'તમારું ડિજિટલ સુરક્ષા કેન્દ્ર', subtitle: 'શંકાસ્પદ સંદેશા, ફિશિંગ અને ઑનલાઇન છેતરપિંડીથી સુરક્ષિત રહો.', voiceAction: 'અવાજ સંદેશ' },
+  pa: { title: 'ਤੁਹਾਡਾ ਡਿਜ਼ੀਟਲ ਸੁਰੱਖਿਆ ਕੇਂਦਰ', subtitle: 'ਸ਼ੱਕੀ ਸੁਨੇਹਿਆਂ, ਫਿਸ਼ਿੰਗ ਅਤੇ ਔਨਲਾਈਨ ਠੱਗੀ ਤੋਂ ਸੁਰੱਖਿਅਤ ਰਹੋ।', voiceAction: 'ਆਵਾਜ਼ੀ ਸੁਨੇਹਾ' }
+};
+
+export function getDashboardCopy(language: LanguageCode) {
+  return dashboardCopy[language];
+}
+
+const voiceMessageLabels: Record<LanguageCode, string> = {
+  en: 'Voice message', hi: 'आवाज़ से संदेश', bn: 'কণ্ঠে বার্তা', mr: 'आवाजातील संदेश',
+  ta: 'குரல் செய்தி', te: 'వాయిస్ సందేశం', kn: 'ಧ್ವನಿ ಸಂದೇಶ', ml: 'ശബ്ദ സന്ദേശം',
+  gu: 'અવાજ સંદેશ', pa: 'ਆਵਾਜ਼ੀ ਸੁਨੇਹਾ'
+};
+
+export function getVoiceMessageLabel(language: LanguageCode) {
+  return voiceMessageLabels[language];
+}
+
 interface LanguageContextValue {
   language: LanguageCode;
   setLanguage: (language: LanguageCode) => void;

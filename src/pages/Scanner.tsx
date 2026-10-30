@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SAMPLE_MESSAGES } from '../data/sampleMessages';
-import { getSampleLabel, LANGUAGES, useLanguage } from '../i18n';
+import { getSampleLabel, getVoiceMessageLabel, LANGUAGES, useLanguage } from '../i18n';
 import { 
   FileText, 
   Image as ImageIcon, 
+  Mic,
   UploadCloud, 
   Trash2, 
   RefreshCw, 
@@ -21,7 +22,9 @@ export const Scanner: React.FC = () => {
   const { language, t } = useLanguage();
   const initialSampleId = searchParams.get('sample');
 
-  const [inputMode, setInputMode] = useState<'text' | 'screenshot'>(searchParams.get('mode') === 'screenshot' ? 'screenshot' : 'text');
+  const [inputMode, setInputMode] = useState<'text' | 'screenshot' | 'voice'>(
+    searchParams.get('mode') === 'screenshot' ? 'screenshot' : searchParams.get('mode') === 'voice' ? 'voice' : 'text'
+  );
   const [messageText, setMessageText] = useState('');
   const [selectedSampleId, setSelectedSampleId] = useState<string | undefined>(undefined);
   
@@ -33,6 +36,17 @@ export const Scanner: React.FC = () => {
 
   // Validation error state
   const [validationError, setValidationError] = useState<string | null>(null);
+  useEffect(() => {
+    const handleVoiceTranscript = (event: Event) => {
+      const transcript = (event as CustomEvent<string>).detail;
+      if (!transcript) return;
+      setMessageText(transcript);
+      setSelectedSampleId(undefined);
+      setValidationError(null);
+    };
+    window.addEventListener('ghostsignal:voice-message-transcript', handleVoiceTranscript);
+    return () => window.removeEventListener('ghostsignal:voice-message-transcript', handleVoiceTranscript);
+  }, []);
 
   // If navigated with sample query param, load that sample automatically
   useEffect(() => {
@@ -99,8 +113,8 @@ export const Scanner: React.FC = () => {
   };
 
   const handleStartScan = () => {
-    if (inputMode === 'text' && !messageText.trim()) {
-      setValidationError(t('pasteMessage'));
+    if ((inputMode === 'text' || inputMode === 'voice') && !messageText.trim()) {
+      setValidationError(inputMode === 'voice' ? t('startListening') : t('pasteMessage'));
       return;
     }
 
@@ -116,7 +130,7 @@ export const Scanner: React.FC = () => {
       state: {
         text: messageText.trim(),
         language: LANGUAGES.find((item) => item.code === language)?.name ?? 'English',
-        sourceType: inputMode,
+              sourceType: inputMode,
         sampleId: selectedSampleId,
         screenshotUrl: screenshotPreview
       }
@@ -141,11 +155,11 @@ export const Scanner: React.FC = () => {
         </div>
 
         {/* Input Method Switcher */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <div className="flex items-center gap-2 p-1 bg-slate-900 rounded-xl border border-slate-800">
+        <div className="flex flex-col gap-3 border-b border-slate-800 pb-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="grid w-full grid-cols-3 gap-1 rounded-xl border border-slate-800 bg-slate-900 p-1 sm:flex sm:w-auto sm:items-center sm:gap-2">
             <button
               onClick={() => setInputMode('text')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-center text-xs font-semibold leading-tight transition-all cursor-pointer sm:gap-2 sm:px-4 ${
                 inputMode === 'text'
                   ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
                   : 'text-slate-400 hover:text-white'
@@ -165,9 +179,16 @@ export const Scanner: React.FC = () => {
               <ImageIcon className="w-3.5 h-3.5" />
               <span>{t('screenshot')}</span>
             </button>
+            <button
+              onClick={() => setInputMode('voice')}
+              className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-center text-xs font-semibold leading-tight transition-all cursor-pointer sm:gap-2 sm:px-4 ${inputMode === 'voice' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-white'}`}
+            >
+              <Mic className="w-3.5 h-3.5" />
+              <span>{getVoiceMessageLabel(language)}</span>
+            </button>
           </div>
 
-          <div className="text-xs text-slate-400">{t('language')}: {LANGUAGES.find((item) => item.code === language)?.native}</div>
+          <div className="self-end text-xs text-slate-400 sm:self-auto">{t('language')}: {LANGUAGES.find((item) => item.code === language)?.native}</div>
         </div>
 
         {/* Sample Message Quick Buttons */}
@@ -258,6 +279,21 @@ export const Scanner: React.FC = () => {
               )}
             </div>
           </div>
+        )}
+
+        {inputMode === 'voice' && (
+          <section className="rounded-xl border border-(--app-border) bg-(--app-card) p-5 sm:p-7" aria-label={getVoiceMessageLabel(language)}>
+            <div className="mx-auto flex max-w-xl flex-col items-center gap-4 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-(--app-tint) text-(--app-primary)"><Mic className="h-7 w-7" /></div>
+              <h2 className="text-lg font-semibold text-white">{getVoiceMessageLabel(language)}</h2>
+              <p className="text-sm text-slate-400">{t('assistantDisclosure')}</p>
+              <button onClick={() => window.dispatchEvent(new Event('ghostsignal:listen-message'))} className="inline-flex min-h-14 items-center justify-center gap-3 rounded-xl bg-(--app-primary) px-6 py-3 text-sm font-semibold text-(--app-on-primary)">
+                <Mic className="h-5 w-5" />{t('startListening')}
+              </button>
+              {messageText && <p className="w-full rounded-lg border border-(--app-border) bg-(--app-card-muted) p-4 text-left text-sm text-slate-200">{messageText}</p>}
+              {!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window) && <p role="status" className="text-sm text-amber-600">{t('speechUnavailable')}</p>}
+            </div>
+          </section>
         )}
 
         {/* Input Method B (Screenshot Upload) */}

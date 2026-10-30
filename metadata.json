@@ -1,6 +1,6 @@
 {
   "name": "GhostSignal – The Offline Scam Shield",
-  "description": "A frontend-only GhostSignal prototype with simulated, explainable scam analysis.",
+  "description": "GhostSignal helps people review suspicious messages with clear, local keyword checks and practical safety guidance.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

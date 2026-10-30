@@ -1,104 +1,44 @@
-# GhostSignal – The Offline Scam Shield
+# GhostSignal — The Offline Scam Shield
 
-> **"Your messages. Your privacy. Your protection."**  
-> An independent on-device cybersecurity assistant built to protect users from deceptive messages, phishing attacks, and payment manipulation without sending personal data to the internet.
+GhostSignal helps people review suspicious messages, understand common warning signs, and find practical next steps. The application supports a local keyword-based check, multilingual navigation, voice-assisted input, scan history, and India-specific cybercrime support.
 
----
+## Run locally
 
-## 🛡️ Product Overview
-
-**GhostSignal** is an on-device digital safety companion that helps people examine suspicious text messages, WhatsApp chats, and screenshots. It explains in simple, plain language **why** a message looks suspicious, rather than merely giving a cryptic verdict.
-
-Most online scam filters transmit your private SMS conversations, bank alerts, and authentication codes to remote servers. GhostSignal is built from first principles as an air-gapped, on-device shield: **your messages never leave your phone.**
-
-### Core Foundational Principles
-
-1. **Private by Design**: Zero message uploads. Messages, screenshots, and spoken words are inspected locally in device memory with no cloud logging or tracking.
-2. **Plain-Language Explanations**: Accessible to all users regardless of literacy, age, or technical background. Explains threats in simple everyday words instead of technical jargon.
-3. **100% Reliable Without Internet**: Works seamlessly in airplane mode, remote areas with low connectivity, or during mobile network outages.
-
----
-
-## 🌐 Language & Literacy Accessibility
-
-GhostSignal is built for universal access:
-
-- **10 Indian Languages Supported**:
-  - English
-  - Hindi (हिन्दी)
-  - Bengali (বাংলা)
-  - Marathi (मराठी)
-  - Tamil (தமிழ்)
-  - Telugu (తెలుగు)
-  - Kannada (ಕನ್ನಡ)
-  - Malayalam (മലയാളം)
-  - Gujarati (ગુજરાતી)
-  - Punjabi (ਪੰਜਾਬੀ)
-- **Voice-Based Interaction**: Speak or dictate suspicious messages using your device's microphone.
-- **Read-Aloud Feature (Text-to-Speech)**: Listen to full safety assessments, warning signs, and actionable advice with the tap of a speaker button.
-- **Simplified Explanations**: Avoids confusing jargon (e.g. *"The sender is pressuring you to act quickly"* instead of *"Urgency-based social engineering"*).
-
----
-
-## 🚀 Quick Start & Installation
-
-To run GhostSignal locally:
+Requires Node.js 20.19+ or 22.12+.
 
 ```bash
-# 1. Clone repository
-git clone <repository_url>
-cd ghostsignal
-
-# 2. Install dependencies
 npm install
-
-# 3. Start development server
 npm run dev
 ```
 
-The application is available on `http://localhost:3000`.
+Open the URL printed by Vite (default: `http://localhost:3000`). No API key or backend is required.
 
----
+## Sign in
 
-## 📱 User Authentication
+1. Enter a phone number and continue.
+2. Enter the local sign-in code shown on screen: **123456**.
+3. Sign-in, language, theme, and voice preferences are stored in this browser. Sign out from the navigation menu.
 
-GhostSignal uses a privacy-focused authentication interface requiring **only**:
-1. Mobile Phone Number (Country code defaults to India `+91`)
-2. 6-Digit Verification Code
+No SMS is sent. The sign-in code is for local access only.
 
-> **Testing Verification Code:**
-> ### `123456`
-> *A convenient "Auto-fill Code" button is available on the screen for instant testing.*
+## Language and voice
 
----
+The interface supports English, Hindi, Bengali, Marathi, Tamil, Telugu, Kannada, Malayalam, Gujarati, and Punjabi. Your selection is saved and updates the interface without a refresh.
 
-## 🔍 How to Use the Scanner
+The voice assistant uses browser speech recognition for navigation commands and voice-message transcription, and browser speech synthesis for spoken advice. Availability and voice quality depend on the browser and device. Microphone permission is requested only when you start listening. Voice input is not sent to GhostSignal's message checker; do not speak private messages or financial credentials if your browser's speech service is not trusted.
 
-GhostSignal provides three equally accessible input methods:
+## Message checks
 
-1. **Paste Text**: Paste raw SMS, WhatsApp, or Telegram messages.
-2. **Upload Screenshot**: Select an image file (PNG, JPG, JPEG) or take a photo with your camera.
-3. **Speak Message**: Tap the microphone button and read the message aloud in your preferred language.
+Text is reviewed using local keyword rules for common signals such as urgency, suspicious links, OTP requests, UPI payment pressure, and impersonation. Results explain the rules that matched; they are not AI predictions, statistically validated probabilities, or proof that a message is safe.
 
-### Core Threat Patterns Detected
+PNG and JPG screenshots can be previewed, but image text recognition is not available. Screenshot-only results are marked **Not assessed**. Paste or dictate the message text to check it.
 
-- **Urgency & Coercion**: Artificial deadlines pressuring you to act before thinking.
-- **Fake Links**: Unverified web addresses masquerading as official bank portals.
-- **OTP Stealing**: Requests asking you to read back or share secret one-time passcodes.
-- **UPI PIN Traps**: Claims that you must enter a PIN to receive prize money or refunds.
-- **Bank Impersonation**: Impersonating official institutions with threats of account deactivation.
+Scan history is stored in this browser's local storage and can be cleared from Scan History.
 
----
+## Cybercrime support
 
-## 🛠️ Technology Stack
+For suspected financial cyber fraud in India, call **1930** and report through the [National Cyber Crime Reporting Portal](https://cybercrime.gov.in/). GhostSignal does not file complaints. No official SMS reporting contact is verified in the app; do not use 1930 as an SMS number. If money was lost, contact your bank or payment provider immediately. Never share your OTP, UPI PIN, or banking password.
 
-- **Framework**: React 19 (TypeScript)
-- **Styling**: Tailwind CSS v4 (Cybersecurity Dark Navy `#0B111E` & Electric Cyan `#06B6D4`)
-- **Speech Technologies**: Web Speech API (`SpeechRecognition` & `SpeechSynthesis`)
-- **Routing**: React Router v7
-- **Icons**: Lucide React
-- **Persistence**: HTML5 Local Storage
+## Privacy and offline limits
 
----
-
-*GhostSignal – The Offline Scam Shield. Your messages. Your privacy. Your protection.*
+Message checks run in the browser and are not sent to a remote analysis service. The application has not undergone network-isolation verification and does not include offline asset caching. Initial loading and browser speech services may use network connections depending on the environment. These limits are shown in the app so offline design goals are not mistaken for a security certification.

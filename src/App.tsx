@@ -19,6 +19,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 import { QuickAssistant } from './components/QuickAssistant';
 import { LanguageProvider } from './i18n';
 import { VoiceSettingsProvider } from './hooks/useVoiceSettings';
+import { ThemeProvider } from './hooks/useTheme';
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -32,26 +33,28 @@ function ScrollToTop() {
 export default function App() {
   return (
     <BrowserRouter>
-      <LanguageProvider>
-        <VoiceSettingsProvider>
-          <AuthProvider>
-            <ScrollToTop />
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route element={<ProtectedLayout />}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/scanner" element={<Scanner />} />
-                <Route path="/analysis" element={<Analysis />} />
-                <Route path="/results" element={<Results />} />
-                <Route path="/history" element={<History />} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/help" element={<Help />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Route>
-            </Routes>
-          </AuthProvider>
-        </VoiceSettingsProvider>
-      </LanguageProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <VoiceSettingsProvider>
+            <AuthProvider>
+              <ScrollToTop />
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route element={<ProtectedLayout />}>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/scanner" element={<Scanner />} />
+                  <Route path="/analysis" element={<Analysis />} />
+                  <Route path="/results" element={<Results />} />
+                  <Route path="/history" element={<History />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/help" element={<Help />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Route>
+              </Routes>
+            </AuthProvider>
+          </VoiceSettingsProvider>
+        </LanguageProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

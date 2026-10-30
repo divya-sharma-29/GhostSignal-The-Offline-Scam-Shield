@@ -6,6 +6,7 @@ import { ShieldLogo } from '../components/ShieldLogo';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../i18n';
 import { LanguageSelector } from '../components/LanguageSelector';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 const LOCAL_SIGN_IN_CODE = '123456';
 const RESEND_SECONDS = 30;
@@ -78,7 +79,7 @@ export const Login = () => {
             <p className="text-xl font-bold text-white">GhostSignal</p>
             <p className="text-xs text-slate-400">The Offline Scam Shield</p>
           </div>
-          <div className="absolute right-4 top-4 sm:right-6 sm:top-6"><LanguageSelector compact /></div>
+          <div className="absolute right-4 top-4 flex gap-2 sm:right-6 sm:top-6"><LanguageSelector compact /><ThemeToggle compact /></div>
         </div>
 
         <div className="login-window px-6 py-8 sm:px-8 sm:py-9">

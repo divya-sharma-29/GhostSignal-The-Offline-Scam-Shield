@@ -1,34 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowUpRight, Bot, Clock3, Languages, LockKeyhole, Mic, Phone, ScanLine, Square, Volume2, X } from 'lucide-react';
+import { ArrowUpRight, Clock3, Languages, LockKeyhole, Mic, Phone, ScanLine, Square, Volume2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LANGUAGES, catalogs, useLanguage, type LanguageCode, type TranslationKey } from '../i18n';
 import { useVoiceSettings } from '../hooks/useVoiceSettings';
 import { useScanHistory } from '../hooks/useScanHistory';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 
 type Intent = 'scan' | 'screenshot' | 'explain' | 'read' | 'language' | 'help' | 'history' | 'home';
-
-interface RecognitionResultEvent extends Event {
-  results: ArrayLike<ArrayLike<{ transcript: string }>>;
-}
-
-interface RecognitionErrorEvent extends Event {
-  error: string;
-}
-
-interface RecognitionController {
-  lang: string;
-  interimResults: boolean;
-  maxAlternatives: number;
-  onresult: ((event: RecognitionResultEvent) => void) | null;
-  onerror: ((event: RecognitionErrorEvent) => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-}
-
-type RecognitionConstructor = new () => RecognitionController;
 
 const intentPhrases: Record<LanguageCode, Record<Intent, string[]>> = {
   en: { scan: ['scan this message', 'check this message', 'check whether this message is fake', 'scan message'], screenshot: ['scan this screenshot', 'check this screenshot', 'upload screenshot'], explain: ['explain this result', 'explain this message', 'why is this dangerous'], read: ['read the warning', 'read this result', 'tell me what i should do'], language: ['change language', 'change my language'], help: ['contact cybercrime', 'open cybercrime help', 'open the cybercrime helpline', 'open helpline', 'report cybercrime'], history: ['show my previous scans', 'show scan history', 'open scan history'], home: ['go home', 'open dashboard', 'go to dashboard'] },
@@ -54,23 +33,33 @@ function parseIntent(text: string, language: LanguageCode): Intent | undefined {
   return priority.find((intent) => intentPhrases[language][intent].some((phrase) => command.includes(phrase.toLocaleLowerCase(language))));
 }
 
-function getRecognitionConstructor() {
-  const speechWindow = window as Window & { SpeechRecognition?: RecognitionConstructor; webkitSpeechRecognition?: RecognitionConstructor };
-  return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
-}
-
 export const QuickAssistant = () => {
   const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
   const { history } = useScanHistory();
   const { enabled, setEnabled, rate, setRate, voiceURI, setVoiceURI, matchingVoices, speak, stop } = useVoiceSettings();
   const [isOpen, setIsOpen] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [status, setStatus] = useState('');
-  const [recognized, setRecognized] = useState('');
   const [response, setResponse] = useState('');
   const [showLanguages, setShowLanguages] = useState(false);
-  const recognitionRef = useRef<RecognitionController | null>(null);
+  const captureMessageRef = useRef(false);
+
+  const handleTranscript = (transcript: string) => {
+    if (captureMessageRef.current) {
+      captureMessageRef.current = false;
+      window.dispatchEvent(new CustomEvent('ghostsignal:voice-message-transcript', { detail: transcript }));
+      setResponse(t('recognizedSpeech'));
+      return;
+    }
+    const intent = parseIntent(transcript, language);
+    if (intent) {
+      setStatus(t('processing'));
+      executeIntent(intent, transcript);
+    } else {
+      setResponse(t('intentUnknown'));
+    }
+  };
+
+  const { isListening, status, recognizedText: recognized, startListening, stopListening, setStatus } = useSpeechRecognition(handleTranscript);
 
   useEffect(() => {
     const openAssistant = () => setIsOpen(true);
@@ -79,18 +68,24 @@ export const QuickAssistant = () => {
   }, []);
 
   useEffect(() => {
-    return () => recognitionRef.current?.abort();
-  }, []);
+    const listenForMessage = () => {
+      captureMessageRef.current = true;
+      setIsOpen(true);
+      startListening();
+    };
+    window.addEventListener('ghostsignal:listen-message', listenForMessage);
+    return () => window.removeEventListener('ghostsignal:listen-message', listenForMessage);
+  }, [startListening]);
 
   useEffect(() => {
-    recognitionRef.current?.abort();
-    setIsListening(false);
+    captureMessageRef.current = false;
+    stopListening();
     stop();
   }, [language]);
 
   const goTo = (path: string) => {
-    recognitionRef.current?.abort();
-    setIsListening(false);
+    captureMessageRef.current = false;
+    stopListening();
     setIsOpen(false);
     navigate(path);
   };
@@ -136,59 +131,18 @@ export const QuickAssistant = () => {
     }
   };
 
-  const startListening = () => {
-    const SpeechRecognition = getRecognitionConstructor();
-    if (!SpeechRecognition) {
-      setStatus(t('speechUnavailable'));
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = LANGUAGES.find((item) => item.code === language)?.speech ?? 'en-IN';
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
-    recognition.onresult = (event) => {
-      const transcript = Array.from(event.results).map((result) => result[0]?.transcript ?? '').join(' ').trim();
-      if (!transcript) return;
-      setRecognized(transcript);
-      const intent = parseIntent(transcript, language);
-      if (intent) {
-        setStatus(t('processing'));
-        executeIntent(intent, transcript);
-      } else if (event.results[event.results.length - 1]?.[0]?.transcript) {
-        setResponse(t('intentUnknown'));
-      }
-    };
-    recognition.onerror = (event) => {
-      setIsListening(false);
-      setStatus(event.error === 'not-allowed' || event.error === 'service-not-allowed' ? t('micDenied') : t('speechUnavailable'));
-    };
-    recognition.onend = () => setIsListening(false);
-    recognitionRef.current = recognition;
-    setRecognized('');
-    setResponse('');
-    setStatus(t('listening'));
-    setIsListening(true);
-    try {
-      recognition.start();
-    } catch {
-      setIsListening(false);
-      setStatus(t('speechUnavailable'));
-    }
-  };
-
   const runTouchIntent = (intent: Intent) => {
     setResponse(t(intentLabels[intent]));
     executeIntent(intent);
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 sm:bottom-6 sm:right-6">
+    <div className={`fixed bottom-4 right-4 z-50 sm:bottom-6 sm:right-6 ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
       <AnimatePresence>
         {isOpen && (
           <motion.section
             id="ghostsignal-assistant-panel"
-            aria-label="GhostSignal assistant actions"
+            aria-label={t('assistantName')}
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
@@ -199,10 +153,10 @@ export const QuickAssistant = () => {
                 <h2 className="text-sm font-semibold text-white">{t('assistantName')}</h2>
                 <p className="mt-1 text-xs text-slate-400">{t('assistantIntro')}</p>
               </div>
-              <button onClick={() => setIsOpen(false)} aria-label="Close assistant" className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white"><X className="h-4 w-4" /></button>
+              <button onClick={() => { stopListening(); stop(); setIsOpen(false); }} aria-label={t('cancel')} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white"><X className="h-4 w-4" /></button>
             </div>
             <div className="mb-3 rounded-xl border border-cyan-900/80 bg-slate-950/60 p-3">
-              <button onClick={isListening ? () => { recognitionRef.current?.abort(); setIsListening(false); setStatus(''); } : startListening} className="flex min-h-14 w-full items-center justify-center gap-3 rounded-lg bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300">
+              <button onClick={isListening ? stopListening : startListening} className="flex min-h-14 w-full items-center justify-center gap-3 rounded-lg bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300">
                 {isListening ? <Square className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
                 <span>{isListening ? t('stopListening') : t('startListening')}</span>
               </button>
@@ -255,22 +209,6 @@ export const QuickAssistant = () => {
           </motion.section>
         )}
       </AnimatePresence>
-      <button
-        aria-expanded={isOpen}
-        aria-controls="ghostsignal-assistant-panel"
-        onClick={() => {
-          if (isOpen) {
-            recognitionRef.current?.abort();
-            setIsListening(false);
-            stop();
-          }
-          setIsOpen((open) => !open);
-        }}
-        className="ml-auto flex items-center gap-2 rounded-full border border-cyan-300/40 bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-950/40 transition hover:bg-cyan-300"
-      >
-        {isOpen ? <X className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
-        <span>{isOpen ? t('cancel') : t('assistant')}</span>
-      </button>
     </div>
   );
 };

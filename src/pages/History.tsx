@@ -9,16 +9,7 @@ import {
   History as HistoryIcon, 
   Trash2, 
   ArrowRight, 
-  ShieldCheck, 
-  Lock, 
-  EyeOff, 
-  WifiOff, 
-  Cpu, 
-  ServerOff, 
-  Database,
-  ExternalLink,
   Search,
-  CheckCircle2,
   AlertTriangle
 } from 'lucide-react';
 

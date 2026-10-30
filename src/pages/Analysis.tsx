@@ -21,7 +21,7 @@ import {
 interface AnalysisState {
   text?: string;
   language?: string;
-  sourceType?: 'text' | 'screenshot';
+  sourceType?: 'text' | 'screenshot' | 'voice';
   sampleId?: string;
   screenshotUrl?: string;
 }

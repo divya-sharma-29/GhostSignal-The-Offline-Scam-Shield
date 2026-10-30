@@ -7,7 +7,7 @@ import { ScanResult, RedFlag, RiskLevel } from '../types';
 export function analyzeMessageInput(
   text: string,
   language = 'English',
-  sourceType: 'text' | 'screenshot' = 'text',
+  sourceType: 'text' | 'screenshot' | 'voice' = 'text',
   sampleId?: string,
   screenshotUrl?: string
 ): ScanResult {
