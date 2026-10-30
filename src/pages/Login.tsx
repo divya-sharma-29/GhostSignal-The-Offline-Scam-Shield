@@ -19,9 +19,9 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   if (!response.ok) {
-    const payload = await response.json().catch(() => null) as { message?: string } | null;
+    const payload = await response.json().catch(() => null) as { message?: string; detail?: string } | null;
     if (response.status === 404) throw new Error('SMS sign-in is not configured on this server yet.');
-    throw new Error(payload?.message ?? 'Unable to verify your number right now. Please try again.');
+    throw new Error(payload?.message ?? payload?.detail ?? 'Unable to verify your number right now. Please try again.');
   }
   return response.json() as Promise<T>;
 }
