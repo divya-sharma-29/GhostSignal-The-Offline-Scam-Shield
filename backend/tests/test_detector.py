@@ -15,3 +15,12 @@ def test_normal_message_stays_low():
     assert result["risk_level"] == "LOW"
     assert result["risk_score"] < 25
 
+def test_leetspeak_and_stretched_terms_are_analyzed():
+    result = analyze(detect("Send your 0TP immediately; your account will be blockeeeed"))
+    assert result["risk_level"] == "HIGH"
+    assert any(item["category"] == "otp" for item in result["threats"])
+
+def test_ai_is_honestly_reported_as_rules_only():
+    from backend.services.ai_engine import predict
+    assert predict("message")["mode"] == "rules-only"
+
