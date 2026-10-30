@@ -18,6 +18,7 @@ def normalize_text(original: str) -> dict:
             findings.append({"kind": "invisible", "text": char, "explanation": f"Unicode format character U+{ord(char):04X} is not normally visible.", "start": index, "end": index + 1, "code_points": [f"U+{ord(char):04X}"]})
 
     normalized = unicodedata.normalize("NFKC", original)
+    normalized = "".join(char for char in normalized if char not in INVISIBLE and unicodedata.category(char) != "Cf")
     # Convert unusual whitespace to ordinary spaces but preserve punctuation.
     normalized = "".join(" " if char.isspace() else char for char in normalized)
     token_chars: list[str] = []
@@ -43,7 +44,7 @@ def normalize_text(original: str) -> dict:
                 findings.append({"kind": "homoglyph", "text": token, "explanation": "A look-alike character was mapped only in this mixed-script token for comparison."})
                 token = mapped
         # Collapse long repeated runs for analysis only; keep the visible source unchanged.
-        collapsed = __import__("re").sub(r"(.)\1{3,}", r"\1\1", token, flags=__import__("re").IGNORECASE)
+        collapsed = __import__("re").sub(r"(.)\1{2,}", r"\1", token, flags=__import__("re").IGNORECASE)
         if collapsed != token:
             findings.append({"kind": "obfuscated-keyword", "text": token, "explanation": "Repeated characters were reduced in the analysis copy to help match stretched words."})
             token = collapsed
