@@ -101,7 +101,7 @@ export const Login = () => {
               <label className="block text-sm font-medium text-slate-200" htmlFor="phone-number">{t('phoneNumber')}</label>
               <div className="flex gap-2">
                 <select
-                  aria-label="Country calling code"
+                  aria-label={t('phoneNumber')}
                   value={countryCode}
                   onChange={(event) => setCountryCode(event.target.value)}
                   className="w-24 rounded-md border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white outline-none focus:border-cyan-400"
@@ -118,7 +118,7 @@ export const Login = () => {
                   maxLength={15}
                   value={phoneNumber}
                   onChange={(event) => setPhoneNumber(event.target.value.replace(/\D/g, ''))}
-                  placeholder="Mobile number"
+                  placeholder={t('phoneNumber')}
                   className="min-w-0 flex-1 rounded-md border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-400"
                 />
               </div>
@@ -161,7 +161,7 @@ export const Login = () => {
 
           {(error || message) && <p role={error ? 'alert' : 'status'} className={`mt-4 text-sm ${error ? 'text-rose-300' : 'text-slate-400'}`}>{error || message}</p>}
         </div>
-        <p className="mt-5 text-center text-xs text-slate-500">AfterHours 1.0 · Offline Round · The Vanguard</p>
+        <p className="mt-5 text-center text-xs text-slate-500">{t('tagline')}</p>
       </motion.section>
     </main>
   );

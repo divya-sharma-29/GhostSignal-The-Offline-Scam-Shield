@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # GhostSignal
 
 **The Offline Scam Shield** is an offline-first scam protection project for AfterHours 1.0 by Team The Vanguard. This version provides local keyword checks and explains the warning signs it finds.
@@ -31,3 +32,7 @@ Open the local URL printed by Vite (by default, `http://localhost:3000`). No API
 ## Important limitations
 
 Risk scores and red flags come from local keyword checks, not AI predictions or proof that a message is safe. AI analysis, OCR, backend services, real SMS authentication, and PWA offline caching are not included. Offline operation and network isolation have not been independently verified. Privacy and offline-first descriptions express the product's design goals, not a security certification.
+=======
+# GhostSignal-The-Offline-Scam-Shield
+Offline AI-Powered Scam Detection and Digital Safety Platform
+>>>>>>> d9f18f9fd1712289caef10af0be6e001011f5ccd

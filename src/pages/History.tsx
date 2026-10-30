@@ -4,6 +4,7 @@ import { useScanHistory } from '../hooks/useScanHistory';
 import { RiskBadge } from '../components/RiskBadge';
 import { RiskLevel, ScanResult } from '../types';
 import { OfflineStatusBanner } from '../components/OfflineStatusBanner';
+import { useLanguage } from '../i18n';
 import { 
   History as HistoryIcon, 
   Trash2, 
@@ -23,6 +24,7 @@ import {
 
 export const History: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { history, clearHistory, deleteScan } = useScanHistory();
 
   const [activeTab, setActiveTab] = useState<'history' | 'privacy'>('history');
@@ -59,13 +61,13 @@ export const History: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs uppercase tracking-wider mb-1">
               <HistoryIcon className="w-4 h-4" />
-              <span>Screen 05 · History & Privacy Architecture</span>
+              <span>{t('history')}</span>
             </div>
             <h1 className="text-3xl font-extrabold text-white tracking-tight">
-              Scan History & Local Privacy
+              {t('history')}
             </h1>
             <p className="text-slate-400 text-sm mt-1">
-              Review locally saved results. Records remain in this browser until you clear them.
+              {t('allHistory')}
             </p>
           </div>
 
@@ -79,15 +81,11 @@ export const History: React.FC = () => {
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Scan History ({history.length})
+              {t('history')} ({history.length})
             </button>
             <button
-              onClick={() => setActiveTab('privacy')}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'privacy'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
+              onClick={() => navigate('/privacy')}
+              className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 transition hover:text-white"
             >
               Privacy & Architecture
             </button>
@@ -107,7 +105,7 @@ export const History: React.FC = () => {
                 <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Search history records..."
+                  placeholder={t('history')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500/60"
@@ -126,7 +124,7 @@ export const History: React.FC = () => {
                         : 'text-slate-400 hover:text-slate-200 bg-slate-950/40'
                     }`}
                   >
-                    {lvl}
+                    {lvl === 'ALL' ? t('allHistory') : lvl === 'HIGH' ? t('riskHigh') : lvl === 'MEDIUM' ? t('riskMedium') : lvl === 'LOW' ? t('riskLow') : t('unassessed')}
                   </button>
                 ))}
               </div>
@@ -139,7 +137,7 @@ export const History: React.FC = () => {
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-red-400 border border-slate-800 hover:border-red-900/40 transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>Clear History</span>
+                    <span>{t('clearHistory')}</span>
                   </button>
                 ) : null}
               </div>
@@ -150,20 +148,20 @@ export const History: React.FC = () => {
               <div className="p-4 rounded-xl bg-red-950/30 border border-red-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2 text-red-200">
                   <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
-                  <span>Are you sure you want to clear your local scan history? This action deletes records in this browser.</span>
+                  <span>{t('confirmClear')}?</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setShowClearConfirm(false)}
                     className="px-3 py-1 rounded bg-slate-900 text-slate-300 hover:bg-slate-800"
                   >
-                    Cancel
+                    {t('cancel')}
                   </button>
                   <button
                     onClick={handleConfirmClear}
                     className="px-3 py-1 rounded bg-red-600 text-white font-semibold hover:bg-red-500"
                   >
-                    Yes, Clear
+                    {t('confirmClear')}
                   </button>
                 </div>
               </div>
@@ -174,11 +172,11 @@ export const History: React.FC = () => {
               <div className="p-12 rounded-2xl bg-slate-900/40 border border-slate-800 text-center space-y-4">
                 <HistoryIcon className="w-10 h-10 text-slate-600 mx-auto" />
                 <div className="space-y-1">
-                  <h3 className="text-base font-semibold text-white">No scans found</h3>
+                  <h3 className="text-base font-semibold text-white">{t('noScans')}</h3>
                   <p className="text-xs text-slate-400 max-w-sm mx-auto">
                     {searchQuery || filterLevel !== 'ALL'
-                      ? 'No items matched your active search or risk filter.'
-                      : 'You have not scanned any messages yet in this browser session.'}
+                      ? t('noScans')
+                      : t('noScans')}
                   </p>
                 </div>
                 <div className="pt-2 flex items-center justify-center gap-3">
@@ -186,7 +184,7 @@ export const History: React.FC = () => {
                     onClick={() => navigate('/scanner')}
                     className="px-4 py-2 rounded-lg bg-cyan-400 text-xs font-bold text-slate-950 hover:bg-cyan-300 cursor-pointer"
                   >
-                    Scan a Message
+                    {t('startScan')}
                   </button>
                 </div>
               </div>
@@ -220,7 +218,7 @@ export const History: React.FC = () => {
                             <>
                               <span className="text-slate-600 font-mono">·</span>
                               <span className="text-slate-400 text-[11px] font-mono">
-                                {item.redFlags.length} red flag{item.redFlags.length > 1 ? 's' : ''}
+                                {item.redFlags.length} {t('redFlags')}
                               </span>
                             </>
                           )}
@@ -242,7 +240,7 @@ export const History: React.FC = () => {
                         <button
                           onClick={() => deleteScan(item.id)}
                           className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors cursor-pointer"
-                          title="Delete from local history"
+                          title={t('clearHistory')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -250,7 +248,7 @@ export const History: React.FC = () => {
                           onClick={() => handleOpenResult(item)}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 group-hover:bg-cyan-500/20 text-xs font-semibold text-slate-200 group-hover:text-cyan-300 border border-slate-700 group-hover:border-cyan-500/40 transition-all cursor-pointer"
                         >
-                          <span>View Result</span>
+                          <span>{t('result')}</span>
                           <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                         </button>
                       </div>

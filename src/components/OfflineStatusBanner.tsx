@@ -11,7 +11,6 @@ export const OfflineStatusBanner: React.FC<OfflineStatusBannerProps> = ({ compac
   const [isOnline, setIsOnline] = useState<boolean>(
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
-  const [simulatedOffline, setSimulatedOffline] = useState(false);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -26,7 +25,7 @@ export const OfflineStatusBanner: React.FC<OfflineStatusBannerProps> = ({ compac
     };
   }, []);
 
-  const effectiveOffline = !isOnline || simulatedOffline;
+  const effectiveOffline = !isOnline;
 
   if (compact) {
     return (
@@ -62,25 +61,13 @@ export const OfflineStatusBanner: React.FC<OfflineStatusBannerProps> = ({ compac
               <span className="text-xs font-mono font-semibold uppercase tracking-wider text-slate-200">
                 {effectiveOffline ? t('offlineStatus') : t('onlineStatus')}
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800/90 text-cyan-300 border border-slate-700/60 font-mono">
-                Prototype status only
-              </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              {effectiveOffline
-                ? t('offlineUnverified')
-                : t('offlineUnverified')}
+              {t('offlineUnverified')}
             </p>
           </div>
         </div>
 
-        <button
-          onClick={() => setSimulatedOffline(!simulatedOffline)}
-          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors whitespace-nowrap shrink-0"
-          title="Change the displayed browser connectivity status"
-        >
-          {simulatedOffline ? 'Use browser status' : 'Preview offline status'}
-        </button>
       </div>
     </div>
   );

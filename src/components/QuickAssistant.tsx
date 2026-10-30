@@ -82,6 +82,12 @@ export const QuickAssistant = () => {
     return () => recognitionRef.current?.abort();
   }, []);
 
+  useEffect(() => {
+    recognitionRef.current?.abort();
+    setIsListening(false);
+    stop();
+  }, [language]);
+
   const goTo = (path: string) => {
     recognitionRef.current?.abort();
     setIsListening(false);
@@ -252,7 +258,14 @@ export const QuickAssistant = () => {
       <button
         aria-expanded={isOpen}
         aria-controls="ghostsignal-assistant-panel"
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={() => {
+          if (isOpen) {
+            recognitionRef.current?.abort();
+            setIsListening(false);
+            stop();
+          }
+          setIsOpen((open) => !open);
+        }}
         className="ml-auto flex items-center gap-2 rounded-full border border-cyan-300/40 bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-950/40 transition hover:bg-cyan-300"
       >
         {isOpen ? <X className="h-4 w-4" /> : <Bot className="h-4 w-4" />}

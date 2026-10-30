@@ -68,7 +68,7 @@ export const Dashboard = () => {
 
         <aside className="space-y-5">
           <section className="border-t-2 border-cyan-500 py-4">
-            <div className="flex items-center gap-2 text-white"><LockKeyhole className="h-4 w-4 text-cyan-300" /><h2 className="text-sm font-semibold">Privacy by design</h2></div>
+            <div className="flex items-center gap-2 text-white"><LockKeyhole className="h-4 w-4 text-cyan-300" /><h2 className="text-sm font-semibold">{t('privacy')}</h2></div>
             <p className="mt-2 text-sm leading-6 text-slate-400">{t('offlineUnverified')}</p>
             <Link to="/privacy" className="mt-3 inline-flex items-center gap-1 text-sm text-cyan-300 hover:text-cyan-200">Privacy & offline details <ArrowRight className="h-4 w-4" /></Link>
           </section>
@@ -78,7 +78,7 @@ export const Dashboard = () => {
             <Link to="/help" className="mt-3 inline-flex items-center gap-1 text-sm text-cyan-300 hover:text-cyan-200">{t('openHelp')} <ArrowRight className="h-4 w-4" /></Link>
           </section>
           <section className="border-t border-slate-800 py-4">
-            <div className="flex items-center gap-2 text-white"><ShieldCheck className="h-4 w-4 text-emerald-300" /><h2 className="text-sm font-semibold">How GhostSignal works</h2></div>
+            <div className="flex items-center gap-2 text-white"><ShieldCheck className="h-4 w-4 text-emerald-300" /><h2 className="text-sm font-semibold">{t('scanner')}</h2></div>
             <ol className="mt-4 space-y-3 text-sm text-slate-400">
               <li className="flex gap-3"><span className="font-mono text-cyan-300">01</span>Paste text or add a screenshot.</li>
               <li className="flex gap-3"><span className="font-mono text-cyan-300">02</span>Review the local rules-based risk assessment.</li>
