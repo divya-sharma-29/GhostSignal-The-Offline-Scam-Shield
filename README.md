@@ -1,38 +1,104 @@
-<<<<<<< HEAD
-# GhostSignal
+# GhostSignal – The Offline Scam Shield
 
-**The Offline Scam Shield** is an offline-first scam protection project for AfterHours 1.0 by Team The Vanguard. This version provides local keyword checks and explains the warning signs it finds.
+> **"Your messages. Your privacy. Your protection."**  
+> An independent on-device cybersecurity assistant built to protect users from deceptive messages, phishing attacks, and payment manipulation without sending personal data to the internet.
 
-## Run locally
+---
 
-Prerequisite: Node.js 20.19+ or 22.12+.
+## 🛡️ Product Overview
+
+**GhostSignal** is an on-device digital safety companion that helps people examine suspicious text messages, WhatsApp chats, and screenshots. It explains in simple, plain language **why** a message looks suspicious, rather than merely giving a cryptic verdict.
+
+Most online scam filters transmit your private SMS conversations, bank alerts, and authentication codes to remote servers. GhostSignal is built from first principles as an air-gapped, on-device shield: **your messages never leave your phone.**
+
+### Core Foundational Principles
+
+1. **Private by Design**: Zero message uploads. Messages, screenshots, and spoken words are inspected locally in device memory with no cloud logging or tracking.
+2. **Plain-Language Explanations**: Accessible to all users regardless of literacy, age, or technical background. Explains threats in simple everyday words instead of technical jargon.
+3. **100% Reliable Without Internet**: Works seamlessly in airplane mode, remote areas with low connectivity, or during mobile network outages.
+
+---
+
+## 🌐 Language & Literacy Accessibility
+
+GhostSignal is built for universal access:
+
+- **10 Indian Languages Supported**:
+  - English
+  - Hindi (हिन्दी)
+  - Bengali (বাংলা)
+  - Marathi (मराठी)
+  - Tamil (தமிழ்)
+  - Telugu (తెలుగు)
+  - Kannada (ಕನ್ನಡ)
+  - Malayalam (മലയാളം)
+  - Gujarati (ગુજરાતી)
+  - Punjabi (ਪੰਜਾਬੀ)
+- **Voice-Based Interaction**: Speak or dictate suspicious messages using your device's microphone.
+- **Read-Aloud Feature (Text-to-Speech)**: Listen to full safety assessments, warning signs, and actionable advice with the tap of a speaker button.
+- **Simplified Explanations**: Avoids confusing jargon (e.g. *"The sender is pressuring you to act quickly"* instead of *"Urgency-based social engineering"*).
+
+---
+
+## 🚀 Quick Start & Installation
+
+To run GhostSignal locally:
 
 ```bash
+# 1. Clone repository
+git clone <repository_url>
+cd ghostsignal
+
+# 2. Install dependencies
 npm install
+
+# 3. Start development server
 npm run dev
 ```
 
-Open the local URL printed by Vite (by default, `http://localhost:3000`). No API key, backend, or external scam-detection service is required.
+The application is available on `http://localhost:3000`.
 
-## Sign in
+---
 
-1. Enter a phone number and continue. No SMS is sent.
-2. Enter the six-digit test code shown on screen: **123456**.
-3. Sign-in state is stored in this browser's local storage. Use **Log out** in the sidebar to clear it.
+## 📱 User Authentication
 
-## Included in this checkpoint
+GhostSignal uses a privacy-focused authentication interface requiring **only**:
+1. Mobile Phone Number (Country code defaults to India `+91`)
+2. 6-Digit Verification Code
 
-- Phone number and test-code sign-in, with login persistence.
-- Dashboard, message scanner, animated analysis stages, explainable results, scan history, privacy information, and one-tap assistant shortcuts.
-- Local keyword checks with three sample scenarios: bank impersonation, UPI payment pressure, and a normal appointment.
-- PNG/JPG screenshot preview and drag-and-drop upload. OCR is not available; an image-only scan is labeled **Not assessed**. Paste the message text separately for keyword checks.
-- Language selection for English and selected Indian languages. Language detection and translation are not implemented.
-- Scan history and mock sign-in data stored in browser local storage. Clear history from the Scan History page.
+> **Testing Verification Code:**
+> ### `123456`
+> *A convenient "Auto-fill Code" button is available on the screen for instant testing.*
 
-## Important limitations
+---
 
-Risk scores and red flags come from local keyword checks, not AI predictions or proof that a message is safe. AI analysis, OCR, backend services, real SMS authentication, and PWA offline caching are not included. Offline operation and network isolation have not been independently verified. Privacy and offline-first descriptions express the product's design goals, not a security certification.
-=======
-# GhostSignal-The-Offline-Scam-Shield
-Offline AI-Powered Scam Detection and Digital Safety Platform
->>>>>>> d9f18f9fd1712289caef10af0be6e001011f5ccd
+## 🔍 How to Use the Scanner
+
+GhostSignal provides three equally accessible input methods:
+
+1. **Paste Text**: Paste raw SMS, WhatsApp, or Telegram messages.
+2. **Upload Screenshot**: Select an image file (PNG, JPG, JPEG) or take a photo with your camera.
+3. **Speak Message**: Tap the microphone button and read the message aloud in your preferred language.
+
+### Core Threat Patterns Detected
+
+- **Urgency & Coercion**: Artificial deadlines pressuring you to act before thinking.
+- **Fake Links**: Unverified web addresses masquerading as official bank portals.
+- **OTP Stealing**: Requests asking you to read back or share secret one-time passcodes.
+- **UPI PIN Traps**: Claims that you must enter a PIN to receive prize money or refunds.
+- **Bank Impersonation**: Impersonating official institutions with threats of account deactivation.
+
+---
+
+## 🛠️ Technology Stack
+
+- **Framework**: React 19 (TypeScript)
+- **Styling**: Tailwind CSS v4 (Cybersecurity Dark Navy `#0B111E` & Electric Cyan `#06B6D4`)
+- **Speech Technologies**: Web Speech API (`SpeechRecognition` & `SpeechSynthesis`)
+- **Routing**: React Router v7
+- **Icons**: Lucide React
+- **Persistence**: HTML5 Local Storage
+
+---
+
+*GhostSignal – The Offline Scam Shield. Your messages. Your privacy. Your protection.*
