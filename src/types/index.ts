@@ -36,6 +36,23 @@ export interface ScanResult {
   safetyRecommendations: string[];
   sampleName?: string;
   screenshotUrl?: string;
+  /** Findings returned by a trusted analysis service. The client does not derive these. */
+  unicodeSecurity?: UnicodeSecurityFindings;
+}
+
+export interface UnicodeSecurityFinding {
+  kind: 'invisible' | 'mixed-script' | 'homoglyph' | 'separator' | 'obfuscated-keyword' | 'suspicious-url';
+  text: string;
+  explanation: string;
+  start?: number;
+  end?: number;
+  codePoints?: string[];
+  scripts?: string[];
+}
+
+export interface UnicodeSecurityFindings {
+  findings: UnicodeSecurityFinding[];
+  normalizedForAnalysis?: string;
 }
 
 export interface SampleMessage {

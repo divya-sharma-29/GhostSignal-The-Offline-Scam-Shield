@@ -211,6 +211,28 @@ ${t('riskNote')}`;
           />
         </div>
 
+        <details className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-sm">
+          <summary className="cursor-pointer text-base font-semibold text-white">Inspect suspicious characters</summary>
+          <p className="mt-3 text-sm leading-6 text-slate-400">The original message below is unchanged. Unicode findings appear only when supplied by the analysis service.</p>
+          <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Original message</h3>
+            <p className="mt-2 whitespace-pre-wrap break-words text-sm text-slate-200">{currentResult.messageText}</p>
+          </div>
+          {currentResult.unicodeSecurity?.findings?.length ? (
+            <div className="mt-4 space-y-3">
+              <h3 className="text-sm font-semibold text-white">Server-reported findings</h3>
+              {currentResult.unicodeSecurity.findings.map((finding, index) => (
+                <article key={`${finding.kind}-${index}`} className="rounded-xl border border-amber-900/50 bg-amber-950/20 p-4">
+                  <p className="font-mono text-sm text-amber-200">{finding.text || 'Character range reported'}</p>
+                  <p className="mt-1 text-sm text-slate-300">{finding.explanation}</p>
+                  <p className="mt-2 text-xs text-slate-400">{finding.kind.replaceAll('-', ' ')}{finding.codePoints?.length ? ` · ${finding.codePoints.join(', ')}` : ''}{finding.scripts?.length ? ` · Scripts: ${finding.scripts.join(', ')}` : ''}</p>
+                </article>
+              ))}
+            </div>
+          ) : <p className="mt-4 rounded-lg bg-slate-950/60 p-3 text-sm text-slate-400">No Unicode inspection data was provided for this scan. This does not mean the text is free of unusual characters.</p>}
+          {currentResult.unicodeSecurity?.normalizedForAnalysis && <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/70 p-4"><h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Normalized analysis representation</h3><p className="mt-2 whitespace-pre-wrap break-words font-mono text-sm text-slate-300">{currentResult.unicodeSecurity.normalizedForAnalysis}</p></div>}
+        </details>
+
         {/* SECTION D: PLAIN-LANGUAGE EXPLANATION */}
         <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl space-y-3">
           <div className="flex items-center gap-2">

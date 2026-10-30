@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
 import { ShieldLogo } from '../components/ShieldLogo';
 import { analyzeMessageInput } from '../utils/riskEngine';
 import { useScanHistory } from '../hooks/useScanHistory';
@@ -127,9 +126,9 @@ export const Analysis: React.FC = () => {
       <div className="max-w-2xl w-full space-y-8">
         {/* Animated Shield Header */}
         <div className="text-center space-y-4">
-          <motion.div className="inline-flex relative" animate={{ scale: [1, 1.035, 1] }} transition={{ duration: 2, repeat: Infinity }}>
+          <div className="inline-flex relative">
             <ShieldLogo size="xl" pulse className="animate-shield-glow" />
-          </motion.div>
+          </div>
 
           <div className="space-y-1">
             <span className="text-xs font-mono font-semibold uppercase tracking-wider text-cyan-400">
@@ -159,12 +158,7 @@ export const Analysis: React.FC = () => {
             </div>
 
             <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-              <motion.div 
-                className="h-full bg-cyan-400 rounded-full transition-all duration-100 ease-out"
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.1, ease: 'linear' }}
-              />
+              <div className="h-full rounded-full bg-cyan-400 transition-[width] duration-100 ease-out" style={{ width: `${progress}%` }} />
             </div>
           </div>
 

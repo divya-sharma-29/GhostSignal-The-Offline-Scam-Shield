@@ -3,23 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation, Navigate, Outlet } from 'react-router-dom';
+import React, { Suspense, lazy, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation, Outlet } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
-import { Dashboard } from './pages/Dashboard';
-import { Scanner } from './pages/Scanner';
-import { Analysis } from './pages/Analysis';
-import { Results } from './pages/Results';
-import { History } from './pages/History';
-import { Login } from './pages/Login';
-import { Privacy } from './pages/Privacy';
-import { Help } from './pages/Help';
-import { AuthProvider, useAuth } from './hooks/useAuth';
-import { QuickAssistant } from './components/QuickAssistant';
+const Dashboard = lazy(() => import('./pages/Dashboard').then((module) => ({ default: module.Dashboard })));
+const Scanner = lazy(() => import('./pages/Scanner').then((module) => ({ default: module.Scanner })));
+const Analysis = lazy(() => import('./pages/Analysis').then((module) => ({ default: module.Analysis })));
+const Results = lazy(() => import('./pages/Results').then((module) => ({ default: module.Results })));
+const History = lazy(() => import('./pages/History').then((module) => ({ default: module.History })));
+const Login = lazy(() => import('./pages/Login').then((module) => ({ default: module.Login })));
+const Privacy = lazy(() => import('./pages/Privacy').then((module) => ({ default: module.Privacy })));
+const Help = lazy(() => import('./pages/Help').then((module) => ({ default: module.Help })));
+import { AuthProvider } from './hooks/useAuth';
 import { LanguageProvider } from './i18n';
 import { VoiceSettingsProvider } from './hooks/useVoiceSettings';
 import { ThemeProvider } from './hooks/useTheme';
+const AIGuide = lazy(() => import('./pages/AIGuide').then((module) => ({ default: module.AIGuide })));
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -38,7 +38,7 @@ export default function App() {
           <VoiceSettingsProvider>
             <AuthProvider>
               <ScrollToTop />
-              <Routes>
+              <Suspense fallback={<div role="status" className="mx-auto max-w-3xl px-5 py-12 text-sm text-(--app-text-muted)">Loading GhostSignal…</div>}><Routes>
                 <Route path="/login" element={<Login />} />
                 <Route element={<ProtectedLayout />}>
                   <Route path="/" element={<Dashboard />} />
@@ -48,9 +48,10 @@ export default function App() {
                   <Route path="/history" element={<History />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/help" element={<Help />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
+                  <Route path="/guide" element={<AIGuide />} />
+                  <Route path="*" element={<AIGuide />} />
                 </Route>
-              </Routes>
+              </Routes></Suspense>
             </AuthProvider>
           </VoiceSettingsProvider>
         </LanguageProvider>
@@ -60,8 +61,7 @@ export default function App() {
 }
 
 function ProtectedLayout() {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
+  // Scanning and safety guidance remain available without creating an account.
 
   return (
     <div className="app-canvas min-h-screen text-slate-100 selection:bg-cyan-500/20 selection:text-cyan-200 md:grid md:grid-cols-[248px_minmax(0,1fr)]">
@@ -70,7 +70,6 @@ function ProtectedLayout() {
         <main className="flex-1"><Outlet /></main>
         <Footer />
       </div>
-      <QuickAssistant />
     </div>
   );
 }

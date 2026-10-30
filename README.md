@@ -1,44 +1,51 @@
 # GhostSignal — The Offline Scam Shield
 
-GhostSignal helps people review suspicious messages, understand common warning signs, and find practical next steps. The application supports a local keyword-based check, multilingual navigation, voice-assisted input, scan history, and India-specific cybercrime support.
+GhostSignal helps people review suspicious messages, understand warning signs, and find practical next steps. The tagline is “Your messages. Your privacy. Your protection.” Message checks run in the browser using explainable keyword rules.
 
-## Run locally
+## Requirements and local development
 
-Requires Node.js 20.19+ or 22.12+.
+Use Node.js 20.19+ or 22.12+ and npm.
 
-```bash
+```sh
 npm install
 npm run dev
 ```
 
-Open the URL printed by Vite (default: `http://localhost:3000`). No API key or backend is required.
+Vite serves the app at `http://localhost:3000`. The development server binds to `0.0.0.0` so devices on the same trusted Wi-Fi network can access it at `http://<computer-LAN-IP>:3000`. Keep the firewall enabled, use a trusted private network, and do not forward this development port to the public internet.
 
-## Sign in
+Create an optimized production bundle with `npm run build` and serve the generated `dist/` directory with any static host. Configure HTTPS, compression (Brotli or gzip), and long-lived immutable caching for hashed assets at the host. `npm run preview` serves the built app locally for review.
 
-1. Enter a phone number and continue.
-2. Enter the local sign-in code shown on screen: **123456**.
-3. Sign-in, language, theme, and voice preferences are stored in this browser. Sign out from the navigation menu.
+## Install and offline use
 
-No SMS is sent. The sign-in code is for local access only.
+The production build includes a web app manifest, scalable icons, and a service worker that precaches the app shell and built route assets. Serve the built app over HTTPS (or localhost), open it once while online, then use the browser's **Install app** or **Add to Home screen** action. The offline fallback page appears if the app shell was not cached yet. The service worker does not cache API responses or user screenshots.
 
-## Language and voice
+Text rules, safety guidance, and browser-local scan history are designed to remain available after the app shell has been cached. This project has not yet been verified in airplane mode on physical Android devices. OCR and an ML model are not included, so screenshot text extraction and model-based detection are unavailable offline.
 
-The interface supports English, Hindi, Bengali, Marathi, Tamil, Telugu, Kannada, Malayalam, Gujarati, and Punjabi. Your selection is saved and updates the interface without a refresh.
+## Phone verification backend
 
-The voice assistant uses browser speech recognition for navigation commands and voice-message transcription, and browser speech synthesis for spoken advice. Availability and voice quality depend on the browser and device. Microphone permission is requested only when you start listening. Voice input is not sent to GhostSignal's message checker; do not speak private messages or financial credentials if your browser's speech service is not trusted.
+The login screen requests a one-time verification code for the entered mobile number and verifies the code through a same-origin backend. This repository does not include an SMS delivery provider or backend, so no real text message is sent until those services are configured. Scanning remains available without signing in.
 
-## Message checks
+Implement these endpoints before enabling phone verification in a deployment:
 
-Text is reviewed using local keyword rules for common signals such as urgency, suspicious links, OTP requests, UPI payment pressure, and impersonation. Results explain the rules that matched; they are not AI predictions, statistically validated probabilities, or proof that a message is safe.
+- `POST /api/auth/otp/request` accepts `{ "phoneNumber": "+911234567890" }`, rate-limits requests, creates a short-lived single-use code, and sends it through a configured SMS provider. Return `{ "challengeId": "...", "expiresInSeconds": 300 }`; never return the code.
+- `POST /api/auth/otp/verify` accepts `{ "challengeId": "...", "code": "..." }`, verifies the code safely, and returns `{ "user": { "id": "...", "displayName": "..." } }` while establishing a secure server session.
+- `GET /api/auth/session` returns the current server-verified user or 401 when no valid session exists.
+- `POST /api/auth/logout` invalidates the server session.
 
-PNG and JPG screenshots can be previewed, but image text recognition is not available. Screenshot-only results are marked **Not assessed**. Paste or dictate the message text to check it.
+Keep SMS provider credentials on the backend. Store only a salted/hashed code verifier, expire and invalidate challenges after use, limit attempts and sends, and avoid logging phone numbers or codes. Use secure, HttpOnly, SameSite cookies and CSRF protection as appropriate. Never trust a client-only success result.
 
-Scan history is stored in this browser's local storage and can be cleared from Scan History.
+## What works today
 
-## Cybercrime support
+- Text and voice-message scanning with local explainable rules, highlighted phrases, risk levels, and next steps.
+- Screenshot selection and preview. OCR is not implemented; image-only results are marked not assessed.
+- Local scan history, language selection (10 Indian languages), optional browser speech output/input, and theme preference stored in this browser.
+- AI Guide, a small contextual explainer that reuses existing scan results and predefined safety guidance. It is not a generative AI model.
+- Privacy information and India cybercrime support. For suspected financial cyber fraud call 1930 and report at [cybercrime.gov.in](https://cybercrime.gov.in/). GhostSignal does not file complaints.
 
-For suspected financial cyber fraud in India, call **1930** and report through the [National Cyber Crime Reporting Portal](https://cybercrime.gov.in/). GhostSignal does not file complaints. No official SMS reporting contact is verified in the app; do not use 1930 as an SMS number. If money was lost, contact your bank or payment provider immediately. Never share your OTP, UPI PIN, or banking password.
+## Offline and privacy limits
 
-## Privacy and offline limits
+Message checks execute locally and are not sent to a remote analysis service. First installation and initial asset caching require the host. Browser speech services may use network connections depending on the browser/device. Language and theme preferences and scan history are stored in local storage on this device. Do not treat a low-risk result as proof that a message is safe.
 
-Message checks run in the browser and are not sent to a remote analysis service. The application has not undergone network-isolation verification and does not include offline asset caching. Initial loading and browser speech services may use network connections depending on the environment. These limits are shown in the app so offline design goals are not mistaken for a security certification.
+## Checks and measurements
+
+`npm run lint` runs TypeScript checking. `npm run build` creates the production bundle and prints emitted asset sizes. No Lighthouse, real mobile-device, or network-isolation measurements are claimed by this project; collect those against a deployed build before publishing performance claims.

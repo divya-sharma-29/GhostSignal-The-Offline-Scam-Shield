@@ -1,0 +1,15 @@
+{
+  "id": "/",
+  "name": "GhostSignal — The Offline Scam Shield",
+  "short_name": "GhostSignal",
+  "description": "Your messages. Your privacy. Your protection.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F3EBDD",
+  "theme_color": "#F3EBDD",
+  "icons": [
+    { "src": "/icons/ghostsignal-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "/icons/ghostsignal-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

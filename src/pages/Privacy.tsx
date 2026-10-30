@@ -1,13 +1,32 @@
-import { ArrowRight, Check, Cpu, EyeOff, LockKeyhole, WifiOff } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowRight, Check, Cpu, EyeOff, LockKeyhole, RefreshCw, Wifi } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n';
 
 export const Privacy = () => {
   const { t } = useLanguage();
+  const [securityStatus, setSecurityStatus] = useState<{ rulesVersion?: string; lastSuccessfulUpdate?: string; verificationStatus?: string; updateAvailable?: boolean } | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('Verification unavailable');
+  const checkSecurityStatus = async () => {
+    setChecking(true);
+    try {
+      const response = await fetch('/api/security/status', { credentials: 'same-origin', headers: { accept: 'application/json' } });
+      if (!response.ok) throw new Error('status unavailable');
+      const payload = await response.json() as typeof securityStatus;
+      if (!payload || typeof payload.verificationStatus !== 'string') throw new Error('invalid status response');
+      setSecurityStatus(payload);
+      setStatusMessage(payload.verificationStatus);
+    } catch {
+      setSecurityStatus(null);
+      setStatusMessage(navigator.onLine ? 'Verification unavailable' : 'Offline — using installed rules');
+    } finally { setChecking(false); }
+  };
+  useEffect(() => { void checkSecurityStatus(); }, []);
   const principles = [
     { title: t('privacy'), description: t('scannerDescription'), icon: LockKeyhole },
     { title: t('stagePrepare'), description: `${t('localRules')}. ${t('aiUnavailable')}`, icon: Cpu },
-    { title: t('offlineStatus'), description: t('offlineUnverified'), icon: WifiOff }
+    { title: t('privacy'), description: 'Initial page loading and browser speech may need an internet connection.', icon: Wifi }
   ];
   const flow = [t('pastedText'), t('localRules'), t('result'), t('explanation')];
 
@@ -42,14 +61,27 @@ export const Privacy = () => {
         </div>
       </section>
 
+      <section className="mt-10 rounded-xl border border-(--app-border) bg-(--app-card) p-5" aria-labelledby="security-engine-heading">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div><p className="text-xs font-semibold uppercase tracking-wide text-(--app-primary)">Security Engine</p><h2 id="security-engine-heading" className="mt-1 text-lg font-semibold">Installed protection rules</h2></div>
+          <button type="button" disabled={checking} onClick={() => void checkSecurityStatus()} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-(--app-border) px-3 text-sm font-medium disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${checking ? 'animate-spin' : ''}`} />{checking ? 'Checking…' : 'Check for updates'}</button>
+        </div>
+        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+          <div className="rounded-lg bg-(--app-card-muted) p-3"><dt className="text-(--app-text-muted)">Installed rules version</dt><dd className="mt-1 font-medium">{securityStatus?.rulesVersion ?? 'Unavailable'}</dd></div>
+          <div className="rounded-lg bg-(--app-card-muted) p-3"><dt className="text-(--app-text-muted)">Last successful update</dt><dd className="mt-1 font-medium">{securityStatus?.lastSuccessfulUpdate ? new Date(securityStatus.lastSuccessfulUpdate).toLocaleString() : 'Unavailable'}</dd></div>
+          <div className="rounded-lg bg-(--app-card-muted) p-3"><dt className="text-(--app-text-muted)">Verification status</dt><dd role="status" className="mt-1 font-medium">{statusMessage}{securityStatus?.updateAvailable ? ' · Update available' : ''}</dd></div>
+        </dl>
+        <p className="mt-3 text-xs leading-5 text-(--app-text-muted)">Update packages are not activated from this screen. Only the server can report package verification.</p>
+      </section>
+
       <section className="mt-10 grid gap-5 sm:grid-cols-2">
         <div className="border-t-2 border-emerald-500 py-4">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-white"><Check className="h-4 w-4 text-emerald-300" />{t('localRules')}</h2>
-          <ul className="mt-3 space-y-2 text-sm text-slate-400"><li>{t('scannerDescription')}</li><li>{t('history')}</li><li>{t('phonePrivacy')}</li></ul>
+          <ul className="mt-3 space-y-2 text-sm text-slate-400"><li>{t('scannerDescription')}</li><li>{t('history')}</li><li>{t('riskNote')}</li></ul>
         </div>
         <div className="border-t-2 border-amber-400 py-4">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-white"><EyeOff className="h-4 w-4 text-amber-300" />{t('aiUnavailable')}</h2>
-          <ul className="mt-3 space-y-2 text-sm text-slate-400"><li>{t('aiUnavailable')}</li><li>{t('ocrUnavailable')}</li><li>{t('offlineUnverified')}</li></ul>
+          <ul className="mt-3 space-y-2 text-sm text-slate-400"><li>{t('aiUnavailable')}</li><li>{t('ocrUnavailable')}</li><li>Initial page loading and browser speech may need an internet connection.</li></ul>
         </div>
       </section>
 
