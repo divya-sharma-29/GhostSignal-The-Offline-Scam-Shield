@@ -1,0 +1,153 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --glass-border: rgba(148, 174, 197, 0.18);
+    --glass-surface: rgba(16, 29, 45, 0.62);
+  }
+  
+  html {
+    font-family: var(--font-sans);
+    color-scheme: dark;
+  }
+  
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+  }
+}
+
+body {
+  min-width: 320px;
+  background: #070d15;
+}
+
+.app-canvas {
+  min-height: 100vh;
+  gap: 14px;
+  padding: 10px;
+  background-color: #070d15;
+  background-image:
+    linear-gradient(rgba(146, 174, 194, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(146, 174, 194, 0.025) 1px, transparent 1px),
+    radial-gradient(ellipse at 78% 12%, rgba(12, 118, 143, 0.15), transparent 44%),
+    radial-gradient(ellipse at 12% 86%, rgba(37, 91, 104, 0.12), transparent 40%);
+  background-size: 42px 42px, 42px 42px, auto, auto;
+  background-attachment: fixed;
+}
+
+.workspace-sidebar,
+.workspace-window,
+.login-window,
+.assistant-window {
+  border: 1px solid var(--glass-border);
+  background: var(--glass-surface);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3), inset 0 1px rgba(255, 255, 255, 0.055);
+  -webkit-backdrop-filter: blur(24px) saturate(135%);
+  backdrop-filter: blur(24px) saturate(135%);
+}
+
+.workspace-sidebar {
+  background: rgba(12, 23, 37, 0.72);
+}
+
+.workspace-window {
+  min-width: 0;
+  overflow: clip;
+  background: linear-gradient(145deg, rgba(20, 35, 51, 0.76), rgba(10, 18, 30, 0.82));
+}
+
+.workspace-window main > .min-h-screen {
+  min-height: auto;
+  background-color: transparent;
+}
+
+.workspace-window main [class*="bg-slate-900"] {
+  background-color: rgba(24, 39, 56, 0.54);
+  border-color: rgba(148, 174, 197, 0.16);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+  backdrop-filter: blur(16px) saturate(125%);
+}
+
+.workspace-window main [class*="bg-slate-950"]:not(input):not(textarea):not(select) {
+  background-color: rgba(7, 15, 25, 0.52);
+  border-color: rgba(148, 174, 197, 0.14);
+}
+
+.login-stage {
+  background-color: #080e17;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.035) 1px, transparent 1px),
+    radial-gradient(ellipse at 50% 45%, rgba(14, 111, 130, 0.17), transparent 54%);
+  background-size: 48px 48px, 48px 48px, auto;
+}
+
+.login-window {
+  border-radius: 22px;
+  background: rgba(19, 34, 51, 0.64);
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.42), inset 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.assistant-window {
+  border-radius: 18px;
+  background: rgba(12, 23, 37, 0.86);
+}
+
+@media (min-width: 768px) {
+  .app-canvas {
+    padding: 14px;
+  }
+
+  .workspace-sidebar {
+    border-radius: 22px;
+  }
+
+  .workspace-window {
+    margin: 0 0 0 2px;
+    min-height: calc(100vh - 28px);
+    border-radius: 24px;
+  }
+}
+
+@media (max-width: 767px) {
+  .workspace-window {
+    margin-top: 10px;
+    border-radius: 18px;
+  }
+}
+
+/* Custom scrollbars for clean cyber aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0B111E;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1E293B;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Subtle pulse glow utilities */
+@keyframes shield-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px -3px rgba(6, 182, 212, 0.25), 0 0 6px -2px rgba(6, 182, 212, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px -3px rgba(6, 182, 212, 0.45), 0 0 12px -2px rgba(6, 182, 212, 0.35);
+  }
+}
+
+.animate-shield-glow {
+  animation: shield-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
