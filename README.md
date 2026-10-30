@@ -141,6 +141,8 @@ Example text request: `POST /scan/text` with JSON `{ "text": "Send your OTP now"
 
 The OTP endpoint paths used by the existing login UI are present but fail closed with HTTP 503 until an SMS provider and secure session implementation are configured. Login is not simulated. OCR dependencies are optional and can be installed with `python -m pip install pillow easyocr`; EasyOCR downloads model weights on first use, so it is not part of the lightweight base install. No ONNX model is included; `/system/status` reports rule-only operation.
 
+Optional ONNX CPU inference is available only after adding a real `backend/models/scam_classifier.onnx`, a compatible `tokenizer.json`, and `model_config.json` as described in [backend/models/README.md](backend/models/README.md). Install the optional runtime with `python -m pip install onnxruntime tokenizers`. The backend does not invent or bundle model weights.
+
 ### Signed rule updates
 
 Set `GHOSTSIGNAL_UPDATE_PUBLIC_KEY` to the base64-encoded 32-byte Ed25519 public key and configure `GHOSTSIGNAL_DATA_DIR` to a protected writable directory. Generate a key pair offline and keep the private key outside the repository and deployment host:
