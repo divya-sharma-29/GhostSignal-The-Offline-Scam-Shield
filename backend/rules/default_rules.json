@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "updated_at": null,
+  "rules": [
+    {"category":"otp","title":"OTP or credential request","patterns":["share your otp","send your otp","send otp","share otp","otp now","tell me the code","verification code","one time password","passcode"],"explanation":"The message asks for an authentication secret.","why_suspicious":"Legitimate support should not ask you to disclose a one-time code.","weight":45},
+    {"category":"upi","title":"UPI PIN or payment request","patterns":["upi pin","enter your pin","scan qr to receive","receive money","claim payment"],"explanation":"The message mentions a payment PIN or asks you to claim funds.","why_suspicious":"A UPI PIN authorizes a payment; it is not needed to receive money.","weight":32},
+    {"category":"urgency","title":"Urgency or account threat","patterns":["immediately","urgent","within 2 hours","within 24 hours","account blocked","account will be blocked","suspended","deactivated"],"explanation":"The message pressures you with a deadline or account consequence.","why_suspicious":"Urgency can discourage independent verification.","weight":25},
+    {"category":"kyc","title":"KYC or identity verification","patterns":["kyc update","verify kyc","kyc expired","update pan card","aadhaar verification"],"explanation":"The message requests identity or account verification.","why_suspicious":"Unexpected verification links can collect personal information.","weight":25},
+    {"category":"prize","title":"Prize or lottery claim","patterns":["you have won","claim your prize","lottery winner","cash prize","selected winner"],"explanation":"The message claims an unexpected prize.","why_suspicious":"Prize scams often demand fees or personal details to release winnings.","weight":30},
+    {"category":"payment","title":"Money transfer pressure","patterns":["send money","transfer now","pay processing fee","refund fee","gift card"],"explanation":"The message requests a payment or transfer.","why_suspicious":"Unexpected payment requests should be verified through a separate trusted channel.","weight":30},
+    {"category":"impersonation","title":"Support or organization impersonation","patterns":["customer support","bank official","police officer","customs department","delivery agent"],"explanation":"The sender claims an official or support role.","why_suspicious":"An unverified identity claim is not proof that a sender represents the organization.","weight":18}
+  ]
+}
+

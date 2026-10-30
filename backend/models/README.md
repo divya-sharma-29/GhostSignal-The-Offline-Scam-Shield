@@ -1,0 +1,1 @@
+No ONNX classifier is included. Add a properly trained model together with a documented tokenizer and output-label contract before enabling inference. The backend intentionally reports rule-only mode until that integration exists.

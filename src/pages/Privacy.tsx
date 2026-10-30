@@ -2,18 +2,17 @@ import { useEffect, useState } from 'react';
 import { ArrowRight, Check, Cpu, EyeOff, LockKeyhole, RefreshCw, Wifi } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n';
+import { api, type SecurityEngineStatus } from '../services/api';
 
 export const Privacy = () => {
   const { t } = useLanguage();
-  const [securityStatus, setSecurityStatus] = useState<{ rulesVersion?: string; lastSuccessfulUpdate?: string; verificationStatus?: string; updateAvailable?: boolean } | null>(null);
+  const [securityStatus, setSecurityStatus] = useState<SecurityEngineStatus | null>(null);
   const [checking, setChecking] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Verification unavailable');
   const checkSecurityStatus = async () => {
     setChecking(true);
     try {
-      const response = await fetch('/api/security/status', { credentials: 'same-origin', headers: { accept: 'application/json' } });
-      if (!response.ok) throw new Error('status unavailable');
-      const payload = await response.json() as typeof securityStatus;
+      const payload = await api.getSecurityStatus();
       if (!payload || typeof payload.verificationStatus !== 'string') throw new Error('invalid status response');
       setSecurityStatus(payload);
       setStatusMessage(payload.verificationStatus);
