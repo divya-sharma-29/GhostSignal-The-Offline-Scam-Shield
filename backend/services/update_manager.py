@@ -25,6 +25,19 @@ def version_key(version: str) -> tuple[int, ...]:
     return tuple(int(part) for part in version.split("."))
 
 
+def atomic_json_write(path: Path, value: dict | list) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(prefix=f"{path.stem}-", suffix=".json", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as temp:
+            json.dump(value, temp, ensure_ascii=False, indent=2)
+            temp.flush()
+            os.fsync(temp.fileno())
+        os.replace(temp_name, path)
+    finally:
+        if os.path.exists(temp_name): os.unlink(temp_name)
+
+
 def status() -> dict:
     rules = read_rules()
     signed_package = rules.get("signed_package")
@@ -63,20 +76,13 @@ def install(package: dict) -> dict:
     RULES_FILE.parent.mkdir(parents=True, exist_ok=True)
     BACKUP_FILE.parent.mkdir(parents=True, exist_ok=True)
     if RULES_FILE.exists():
-        BACKUP_FILE.write_text(RULES_FILE.read_text(encoding="utf-8"), encoding="utf-8")
-    fd, temp_name = tempfile.mkstemp(prefix="rules-", suffix=".json", dir=RULES_FILE.parent)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as temp:
-            json.dump(updated, temp, ensure_ascii=False, indent=2)
-            temp.flush(); os.fsync(temp.fileno())
-        os.replace(temp_name, RULES_FILE)
-    finally:
-        if os.path.exists(temp_name): os.unlink(temp_name)
+        atomic_json_write(BACKUP_FILE, json.loads(RULES_FILE.read_text(encoding="utf-8")))
+    atomic_json_write(RULES_FILE, updated)
     history = []
     if UPDATE_HISTORY_FILE.exists():
         try: history = json.loads(UPDATE_HISTORY_FILE.read_text(encoding="utf-8"))
         except json.JSONDecodeError: pass
     history.append({"version": package["version"], "installed_at": updated["updated_at"], "verification": "Verified"})
-    UPDATE_HISTORY_FILE.write_text(json.dumps(history[-100:], indent=2), encoding="utf-8")
+    atomic_json_write(UPDATE_HISTORY_FILE, history[-100:])
     return status()
 
