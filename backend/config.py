@@ -45,13 +45,13 @@ class Settings(BaseSettings):
     MAX_IMAGE_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB
     ALLOWED_IMAGE_TYPES: List[str] = ["image/jpeg", "image/png", "image/jpg"]
     
-    # OTP Authentication & SMS Gateway
+    # OTP Authentication & Code Generator
     OTP_LENGTH: int = 6
     OTP_EXPIRY_SECONDS: int = 300  # 5 minutes
-    OTP_MAX_ATTEMPTS: int = 3
+    OTP_MAX_ATTEMPTS: int = 5
     DEVELOPMENT_STATIC_OTP: str = "123456"
     SMS_ENABLED: bool = True
-    SHOW_DEV_OTP_IN_RESPONSE: bool = False
+    SHOW_DEV_OTP_IN_RESPONSE: bool = True
     
     # SMS Gateway Credentials (optional for live SMS text delivery)
     TWILIO_ACCOUNT_SID: str = ""

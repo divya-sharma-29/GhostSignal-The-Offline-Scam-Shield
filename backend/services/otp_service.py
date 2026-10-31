@@ -74,7 +74,7 @@ class OTPService:
             otp_code=raw_otp
         )
 
-        show_dev = getattr(settings, "SHOW_DEV_OTP_IN_RESPONSE", False)
+        show_dev = getattr(settings, "SHOW_DEV_OTP_IN_RESPONSE", True)
         masked_phone = f"{country_code} ••••••{digits[-2:] if len(digits) >= 2 else '00'}"
 
         return {
