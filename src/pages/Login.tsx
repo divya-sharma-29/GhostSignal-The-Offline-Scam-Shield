@@ -9,7 +9,6 @@ import { apiService } from '../services/api';
 import { LanguageSelector } from '../components/LanguageSelector';
 import { ThemeToggle } from '../components/ThemeToggle';
 
-const LOCAL_SIGN_IN_CODE = '123456';
 const RESEND_SECONDS = 30;
 
 export const Login = () => {
@@ -63,9 +62,9 @@ export const Login = () => {
     event.preventDefault();
     setError('');
 
-    // Check with backend OTP service
+    // Check with backend OTP service in runtime
     const verifyResult = await apiService.verifyOtp(phoneNumber, countryCode, otp);
-    if (!verifyResult.success && otp !== LOCAL_SIGN_IN_CODE) {
+    if (!verifyResult.success) {
       setError(verifyResult.message || t('invalidOtp'));
       return;
     }

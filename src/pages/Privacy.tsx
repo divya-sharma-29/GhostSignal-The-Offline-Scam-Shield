@@ -309,7 +309,7 @@ export const Privacy = () => {
           </button>
 
           <a
-            href="https://colab.research.google.com/notebook#fileId=https%3A//huggingface.co/HuggingFaceTB/SmolLM3-3B.ipynb"
+            href="https://colab.research.google.com/github/divya-sharma-29/GhostSignal-The-Offline-Scam-Shield/blob/main/backend/training/train_smollm3_3b.ipynb"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-xl border border-(--app-border) bg-(--app-surface-secondary) px-3.5 py-2 text-xs font-semibold text-(--app-text) hover:border-(--app-primary) transition"

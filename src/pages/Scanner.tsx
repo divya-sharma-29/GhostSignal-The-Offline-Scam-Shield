@@ -56,6 +56,14 @@ export const Scanner: React.FC = () => {
   const [whisperEngineUsed, setWhisperEngineUsed] = useState<string | null>(null);
   const [whisperError, setWhisperError] = useState<string | null>(null);
 
+  // Live Microphone MediaRecorder states
+  const [isRecordingMic, setIsRecordingMic] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioStreamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<any>(null);
+
   // Validation & loading states
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -104,9 +112,7 @@ export const Scanner: React.FC = () => {
   };
 
   const handleClear = () => {
-    if (isListening) {
-      stopListening();
-    }
+    stopMicRecording();
     setMessageText('');
     setScreenshotPreview(null);
     setScreenshotName('');
@@ -198,18 +204,119 @@ export const Scanner: React.FC = () => {
     }
   };
 
-  const handleToggleVoice = () => {
-    if (isListening) {
-      stopListening();
-    } else {
-      setValidationError(null);
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      if (audioStreamRef.current) {
+        audioStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, []);
+
+  const startMicRecording = async () => {
+    setValidationError(null);
+    setWhisperError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioStreamRef.current = stream;
+
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : '';
+
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: recorder.mimeType || 'audio/webm'
+        });
+
+        // Clean up media tracks
+        stream.getTracks().forEach((t) => t.stop());
+        audioStreamRef.current = null;
+
+        // If audio blob contains data, transcribe with backend Whisper service
+        if (audioBlob.size > 300) {
+          setIsTranscribingVoice(true);
+          setScanStep('Transcribing audio with on-device Whisper STT...');
+          try {
+            const langCode = LANGUAGES.find((l) => l.code === language)?.code || 'en';
+            const res = await apiService.transcribeVoice(audioBlob, 'microphone.webm', langCode);
+            if (res.success && res.text && res.text.trim()) {
+              setMessageText((prev) => {
+                const cleanPrev = prev.trim();
+                return cleanPrev ? `${cleanPrev} ${res.text.trim()}` : res.text.trim();
+              });
+              setWhisperEngineUsed(res.engine || 'faster-whisper (CTranslate2 int8)');
+              setValidationError(null);
+            } else if (!messageText.trim()) {
+              setWhisperError('Audio captured, but no distinct speech was detected. Speak closer to the microphone.');
+            }
+          } catch (err: any) {
+            console.warn('Backend Whisper error:', err);
+            setWhisperError('Whisper transcription failed. Using local transcript.');
+          } finally {
+            setIsTranscribingVoice(false);
+            setScanStep('');
+          }
+        }
+      };
+
+      recorder.start(250);
+      setIsRecordingMic(true);
+      setRecordingSeconds(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => prev + 1);
+      }, 1000);
+
+      // Start browser recognition for interim transcript display
+      startListening();
+    } catch (err) {
+      console.warn('Microphone MediaRecorder access error:', err);
+      // Fallback to browser recognition
       startListening();
     }
   };
 
-  const handleStartScan = async () => {
+  const stopMicRecording = () => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (e) {
+        console.warn('Error stopping MediaRecorder:', e);
+      }
+    }
+    setIsRecordingMic(false);
     if (isListening) {
       stopListening();
+    }
+  };
+
+  const handleToggleVoice = () => {
+    if (isRecordingMic || isListening) {
+      stopMicRecording();
+    } else {
+      startMicRecording();
+    }
+  };
+
+  const handleStartScan = async () => {
+    if (isRecordingMic || isListening) {
+      stopMicRecording();
     }
 
     if ((inputMode === 'text' || inputMode === 'voice') && !messageText.trim()) {
@@ -269,6 +376,8 @@ export const Scanner: React.FC = () => {
   };
 
   const currentLangObj = LANGUAGES.find(l => l.code === language);
+  const isRecording = isRecordingMic || isListening;
+  const formattedRecordingTime = `${Math.floor(recordingSeconds / 60).toString().padStart(2, '0')}:${(recordingSeconds % 60).toString().padStart(2, '0')}`;
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8 space-y-7 text-(--app-text)">
@@ -318,7 +427,7 @@ export const Scanner: React.FC = () => {
           <button
             type="button"
             onClick={() => {
-              if (isListening) stopListening();
+              if (isRecording) stopMicRecording();
               setInputMode('text');
             }}
             className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition cursor-pointer ${
@@ -333,7 +442,7 @@ export const Scanner: React.FC = () => {
           <button
             type="button"
             onClick={() => {
-              if (isListening) stopListening();
+              if (isRecording) stopMicRecording();
               setInputMode('screenshot');
             }}
             className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition cursor-pointer ${
@@ -356,7 +465,7 @@ export const Scanner: React.FC = () => {
                 : 'text-(--app-text-muted) hover:text-(--app-text)'
             }`}
           >
-            <Mic className={`w-3.5 h-3.5 ${isListening ? 'text-(--app-danger) animate-pulse' : ''}`} />
+            <Mic className={`w-3.5 h-3.5 ${isRecording ? 'text-(--app-danger) animate-pulse' : ''}`} />
             <span>Voice / Mic</span>
           </button>
         </div>
@@ -416,14 +525,14 @@ export const Scanner: React.FC = () => {
                 type="button"
                 onClick={handleToggleVoice}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold border transition cursor-pointer ${
-                  isListening
+                  isRecording
                     ? 'border-(--app-danger) bg-(--app-danger)/15 text-(--app-danger) animate-pulse'
                     : 'border-(--app-border) bg-(--app-surface-secondary) text-(--app-primary) hover:border-(--app-primary)'
                 }`}
-                title={isListening ? 'Stop listening' : 'Dictate with microphone'}
+                title={isRecording ? 'Stop recording & transcribe' : 'Dictate with microphone (Whisper on-device)'}
               >
-                {isListening ? <MicOff className="w-3.5 h-3.5 text-(--app-danger)" /> : <Mic className="w-3.5 h-3.5 text-(--app-primary)" />}
-                <span>{isListening ? 'Stop Recording' : 'Dictate with Mic'}</span>
+                {isRecording ? <MicOff className="w-3.5 h-3.5 text-(--app-danger)" /> : <Mic className="w-3.5 h-3.5 text-(--app-primary)" />}
+                <span>{isRecording ? `Stop (${formattedRecordingTime})` : 'Dictate with Mic'}</span>
               </button>
             </div>
             <textarea
@@ -439,11 +548,11 @@ export const Scanner: React.FC = () => {
               placeholder="Paste suspicious SMS, WhatsApp message, email excerpt, or URL here..."
               className="w-full rounded-2xl border border-(--app-border) bg-(--app-surface-secondary) p-4 text-sm font-mono text-(--app-text) placeholder:text-(--app-text-muted)/60 focus:outline-none focus:ring-2 focus:ring-(--app-primary) transition resize-y"
             />
-            {isListening && (
+            {isRecording && (
               <div className="rounded-xl border border-(--app-danger)/30 bg-(--app-danger)/10 p-2.5 flex items-center justify-between text-xs text-(--app-danger)">
                 <span className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-(--app-danger) animate-ping" />
-                  <strong>Listening:</strong> {recognizedText || 'Speak now...'}
+                  <strong>Recording audio ({formattedRecordingTime}):</strong> {recognizedText || 'Speak now... Whisper will transcribe on-device'}
                 </span>
                 <span className="font-mono text-[10px]">{currentLangObj?.name || 'English'}</span>
               </div>
@@ -477,13 +586,13 @@ export const Scanner: React.FC = () => {
                 type="button"
                 onClick={handleToggleVoice}
                 className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition shadow-xs cursor-pointer ${
-                  isListening
+                  isRecording
                     ? 'bg-(--app-danger) text-white animate-pulse'
                     : 'bg-(--app-primary) text-(--app-on-primary) hover:opacity-90'
                 }`}
               >
-                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                <span>{isListening ? 'Stop Mic Dictation' : 'Start Live Dictation'}</span>
+                {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                <span>{isRecording ? `Stop Dictation (${formattedRecordingTime})` : 'Start Live Dictation'}</span>
               </button>
 
               <button
@@ -515,12 +624,12 @@ export const Scanner: React.FC = () => {
                 type="button"
                 onClick={handleToggleVoice}
                 className={`relative flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-full transition shadow-lg cursor-pointer ${
-                  isListening
+                  isRecording
                     ? 'bg-(--app-danger) text-white scale-105 shadow-(--app-danger)/30 animate-pulse'
                     : 'bg-(--app-surface-secondary) border-2 border-(--app-primary) text-(--app-primary) hover:scale-105 shadow-(--app-primary)/10'
                 }`}
               >
-                {isListening ? (
+                {isRecording ? (
                   <>
                     <span className="absolute inset-0 rounded-full border-4 border-red-400 animate-ping opacity-60"></span>
                     <MicOff className="h-10 w-10 sm:h-12 sm:w-12 text-white" />
@@ -531,8 +640,8 @@ export const Scanner: React.FC = () => {
               </button>
 
               <div className="mt-4 space-y-1">
-                <span className={`text-sm font-bold block ${isListening ? 'text-(--app-danger) animate-pulse' : 'text-(--app-text)'}`}>
-                  {isListening ? 'Listening... Speak your message now' : 'Click Mic to Speak or Upload Audio File'}
+                <span className={`text-sm font-bold block ${isRecording ? 'text-(--app-danger) animate-pulse' : 'text-(--app-text)'}`}>
+                  {isRecording ? `Recording (${formattedRecordingTime})... Speak now (Whisper will transcribe)` : 'Click Mic to Speak or Upload Audio File'}
                 </span>
                 <span className="text-xs text-(--app-text-muted) block">
                   Target Language: <strong>{currentLangObj?.name || 'English'} ({currentLangObj?.native || 'Default'})</strong>
@@ -541,7 +650,7 @@ export const Scanner: React.FC = () => {
             </div>
 
             {/* Audio Waveform Animation when listening */}
-            {isListening && (
+            {isRecording && (
               <div className="flex items-center justify-center gap-1.5 h-6">
                 {[40, 70, 100, 60, 90, 45, 80, 55, 95, 30].map((h, i) => (
                   <span
@@ -605,7 +714,7 @@ export const Scanner: React.FC = () => {
                 rows={4}
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
-                placeholder={isListening ? 'Listening... (Speak words like OTP, KYC, UPI, bank, urgency)' : 'Your spoken words or audio transcript will appear here...'}
+                placeholder={isRecording ? `Recording (${formattedRecordingTime})... Speak words like OTP, KYC, UPI, bank, urgency` : 'Your spoken words or audio transcript will appear here...'}
                 className="w-full rounded-xl border border-(--app-border) bg-(--app-surface-secondary) p-3.5 text-xs font-mono text-(--app-text) placeholder:text-(--app-text-muted)/60 focus:outline-none focus:ring-2 focus:ring-(--app-primary)"
               />
             </div>
@@ -713,14 +822,14 @@ export const Scanner: React.FC = () => {
                   type="button"
                   onClick={handleToggleVoice}
                   className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold border transition cursor-pointer ${
-                    isListening
+                    isRecording
                       ? 'border-(--app-danger) bg-(--app-danger)/15 text-(--app-danger) animate-pulse'
                       : 'border-(--app-border) bg-(--app-surface-secondary) text-(--app-primary) hover:border-(--app-primary)'
                   }`}
-                  title={isListening ? 'Stop listening' : 'Dictate with microphone'}
+                  title={isRecording ? 'Stop recording & transcribe' : 'Dictate with microphone (Whisper on-device)'}
                 >
-                  {isListening ? <MicOff className="w-3.5 h-3.5 text-(--app-danger)" /> : <Mic className="w-3.5 h-3.5 text-(--app-primary)" />}
-                  <span>{isListening ? 'Stop Recording' : 'Add with Mic'}</span>
+                  {isRecording ? <MicOff className="w-3.5 h-3.5 text-(--app-danger)" /> : <Mic className="w-3.5 h-3.5 text-(--app-primary)" />}
+                  <span>{isRecording ? `Stop (${formattedRecordingTime})` : 'Add with Mic'}</span>
                 </button>
               </div>
               <textarea

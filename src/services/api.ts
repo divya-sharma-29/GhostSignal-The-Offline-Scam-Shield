@@ -12,7 +12,7 @@ import { analyzeMessageInput } from '../utils/riskEngine';
 
 const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000';
 
-async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 4000): Promise<Response> {
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 25000): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -118,7 +118,7 @@ export const apiService = {
       const res = await fetchWithTimeout(`${API_BASE_URL}/scan/image/extract`, {
         method: 'POST',
         body: formData
-      }, 10000);
+      }, 25000);
       if (res.ok) {
         return await res.json();
       }
@@ -147,7 +147,7 @@ export const apiService = {
       const res = await fetchWithTimeout(`${API_BASE_URL}/scan/image`, {
         method: 'POST',
         body: formData
-      }, 10000);
+      }, 25000);
 
       if (res.ok) {
         const data = await res.json();
@@ -368,17 +368,15 @@ export const apiService = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phoneNumber, countryCode, otp })
-      });
+      }, 15000);
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        return await res.json();
+        return { success: true, message: data.message || 'Verification successful.', token: data.token };
       }
+      return { success: false, message: data.detail || data.message || 'Invalid verification code.' };
     } catch {
-      // Offline fallback
+      return { success: false, message: 'Backend OTP verification service unreachable.' };
     }
-    if (otp === '123456') {
-      return { success: true, message: 'Verified with local test code.', token: 'offline-session-token' };
-    }
-    return { success: false, message: 'Invalid verification code.' };
   },
 
   /**
@@ -425,7 +423,7 @@ export const apiService = {
       quantization_format: 'Q4_K_M (4-bit medium)',
       file_size_gb: '1.82 GB',
       target_file_name: 'smollm3-3b-q4.gguf',
-      colab_notebook_url: 'https://colab.research.google.com/notebook#fileId=https%3A//huggingface.co/HuggingFaceTB/SmolLM3-3B.ipynb'
+      colab_notebook_url: 'https://colab.research.google.com/github/divya-sharma-29/GhostSignal-The-Offline-Scam-Shield/blob/main/backend/training/train_smollm3_3b.ipynb'
     };
   },
 
@@ -520,7 +518,7 @@ export const apiService = {
       },
       colab_notebook: {
         download_url: `${API_BASE_URL}/model/colab/notebook`,
-        colab_badge_url: 'https://colab.research.google.com/notebook#fileId=https%3A//huggingface.co/HuggingFaceTB/SmolLM3-3B.ipynb'
+        colab_badge_url: 'https://colab.research.google.com/github/divya-sharma-29/GhostSignal-The-Offline-Scam-Shield/blob/main/backend/training/train_smollm3_3b.ipynb'
       }
     };
   },
@@ -551,4 +549,3 @@ export const apiService = {
     return `${API_BASE_URL}/model/colab/dataset`;
   }
 };
-

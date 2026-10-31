@@ -71,7 +71,7 @@ def get_model_download_info() -> Dict[str, Any]:
         "target_local_path": "backend/models/smollm3-3b-q4.gguf",
         "is_locally_installed": has_local,
         "local_size_mb": local_size_mb,
-        "colab_notebook_url": "https://colab.research.google.com/notebook#fileId=https%3A//huggingface.co/HuggingFaceTB/SmolLM3-3B.ipynb",
+        "colab_notebook_url": "https://colab.research.google.com/github/divya-sharma-29/GhostSignal-The-Offline-Scam-Shield/blob/main/backend/training/train_smollm3_3b.ipynb",
         "instructions": (
             "1. Download the quantized model file (~1.82 GB).\n"
             "2. Place it in 'backend/models/smollm3-3b-q4.gguf'.\n"

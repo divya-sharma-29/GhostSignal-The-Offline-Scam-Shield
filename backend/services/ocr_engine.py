@@ -94,13 +94,44 @@ class OCREngine:
                 "ocr_available": bool(self.engine_type)
             }
 
-        # 1. Primary Engine: Windows Native OCR (winocr)
+        # 1. Primary Engine: Windows Native OCR (Direct WinRT OcrEngine)
+        try:
+            import winrt.windows.media.ocr as w_ocr
+            import winrt.windows.globalization as w_glob
+            import winrt.windows.storage.streams as w_streams
+            import winrt.windows.graphics.imaging as w_imaging
+
+            rgba_img = image.convert("RGBA") if image.mode != "RGBA" else image
+            writer = w_streams.DataWriter()
+            writer.write_bytes(rgba_img.tobytes())
+            sb = w_imaging.SoftwareBitmap.create_copy_from_buffer(
+                writer.detach_buffer(),
+                w_imaging.BitmapPixelFormat.RGBA8,
+                rgba_img.width,
+                rgba_img.height
+            )
+            native_engine = w_ocr.OcrEngine.try_create_from_language(w_glob.Language("en")) or w_ocr.OcrEngine.try_create_from_user_profile_languages()
+            if native_engine:
+                op = native_engine.recognize_async(sb)
+                res = op.get()
+                text = res.text.strip() if res and hasattr(res, "text") else ""
+                if text:
+                    return {
+                        "success": True,
+                        "text": text,
+                        "engine": "winocr_windows_native",
+                        "ocr_available": True
+                    }
+        except Exception as e:
+            logger.info(f"Direct WinRT OCR failed ({e}), attempting fallback winocr/easyocr...")
+
+        # 2. Secondary Native Engine: winocr wrapper
         try:
             import winocr
             pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
             try:
                 future = pool.submit(winocr.recognize_pil_sync, image)
-                ocr_res = future.result(timeout=3)
+                ocr_res = future.result(timeout=10)
                 text = ocr_res.get("text", "").strip() if isinstance(ocr_res, dict) else str(ocr_res).strip()
                 if text:
                     return {

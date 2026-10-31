@@ -398,7 +398,7 @@ export const ModelStudio: React.FC = () => {
 
           <div className="flex items-center gap-2.5">
             <a
-              href="https://colab.research.google.com/notebook#fileId=https%3A//huggingface.co/HuggingFaceTB/SmolLM3-3B.ipynb"
+              href="https://colab.research.google.com/github/divya-sharma-29/GhostSignal-The-Offline-Scam-Shield/blob/main/backend/training/train_smollm3_3b.ipynb"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-xl bg-(--app-primary) px-4 py-2.5 text-xs font-bold text-(--app-on-primary) hover:opacity-90 transition shadow-sm cursor-pointer"

@@ -21,7 +21,11 @@ async def extract_image_text(
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file uploaded.")
 
-    file_bytes = await file.read()
+    if hasattr(file, "file") and hasattr(file.file, "read"):
+        file_bytes = file.file.read()
+    else:
+        file_bytes = await file.read()
+
     if not file_bytes:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
@@ -49,7 +53,11 @@ async def scan_image(
         raise HTTPException(status_code=400, detail="No file uploaded.")
 
     # Read uploaded bytes into memory
-    file_bytes = await file.read()
+    if hasattr(file, "file") and hasattr(file.file, "read"):
+        file_bytes = file.file.read()
+    else:
+        file_bytes = await file.read()
+
     if not file_bytes:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 

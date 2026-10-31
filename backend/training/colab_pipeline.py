@@ -82,7 +82,7 @@ def get_pipeline_specs() -> Dict[str, Any]:
             "exists": has_notebook,
             "size_kb": notebook_size_kb,
             "download_url": "/model/colab/notebook",
-            "colab_badge_url": "https://colab.research.google.com/notebook#fileId=https%3A//huggingface.co/HuggingFaceTB/SmolLM3-3B.ipynb"
+            "colab_badge_url": "https://colab.research.google.com/github/divya-sharma-29/GhostSignal-The-Offline-Scam-Shield/blob/main/backend/training/train_smollm3_3b.ipynb"
         },
         "pipeline_stages": [
             {"step": 1, "title": "GPU & Environment Diagnostic", "desc": "Verifies CUDA, T4/A100 VRAM, and PyTorch runtime."},
