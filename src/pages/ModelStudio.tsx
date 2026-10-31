@@ -7,16 +7,13 @@ import {
   ShieldCheck, 
   CheckCircle2, 
   Terminal, 
-  Download, 
   ExternalLink, 
   Copy, 
   Check, 
   RefreshCw, 
   FileCode, 
-  Database, 
   Layers, 
   Sliders, 
-  HardDrive, 
   ChevronRight,
   Play,
   RotateCcw,
@@ -390,7 +387,7 @@ export const ModelStudio: React.FC = () => {
           </div>
         </div>
 
-        {/* Footer Hub: Colab Pipeline, Quantized Download & Dataset Access */}
+        {/* Footer Hub: Unified Google Colab Training & Quantization Pipeline */}
         <div className="border-t border-(--app-border) bg-(--app-surface-secondary) p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-(--app-text)">Model Hub Actions:</span>
@@ -399,45 +396,16 @@ export const ModelStudio: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex items-center gap-2.5">
             <a
               href="https://colab.research.google.com/notebook#fileId=https%3A//huggingface.co/HuggingFaceTB/SmolLM3-3B.ipynb"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-(--app-primary) px-3.5 py-2 text-xs font-bold text-(--app-on-primary) hover:opacity-90 transition"
+              className="inline-flex items-center gap-2 rounded-xl bg-(--app-primary) px-4 py-2.5 text-xs font-bold text-(--app-on-primary) hover:opacity-90 transition shadow-sm cursor-pointer"
             >
-              <FileCode className="h-3.5 w-3.5" />
-              <span>Launch in Google Colab</span>
-              <ExternalLink className="h-3 w-3" />
-            </a>
-
-            <a
-              href={apiService.getColabNotebookUrl()}
-              download="train_smollm3_3b.ipynb"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-(--app-border) bg-(--app-card) px-3 py-2 text-xs font-semibold text-(--app-text) hover:border-(--app-primary) transition cursor-pointer"
-            >
-              <Download className="h-3.5 w-3.5 text-(--app-primary)" />
-              <span>Notebook (.ipynb)</span>
-            </a>
-
-            <a
-              href={apiService.getColabDatasetUrl()}
-              download="synthetic_scam_dataset.csv"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-(--app-border) bg-(--app-card) px-3 py-2 text-xs font-semibold text-(--app-text) hover:border-(--app-primary) transition cursor-pointer"
-            >
-              <Database className="h-3.5 w-3.5 text-(--app-secondary)" />
-              <span>Dataset (508 CSV)</span>
-            </a>
-
-            <a
-              href="https://huggingface.co/HuggingFaceTB/SmolLM3-3B-GGUF/resolve/main/smollm3-3b-instruct-q4_k_m.gguf"
-              download="smollm3-3b-q4.gguf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-(--app-border) bg-(--app-card) px-3 py-2 text-xs font-semibold text-(--app-text) hover:border-(--app-primary) transition cursor-pointer"
-            >
-              <HardDrive className="h-3.5 w-3.5 text-(--app-primary)" />
-              <span>GGUF Weights (1.82 GB)</span>
+              <FileCode className="h-4 w-4" />
+              <span>Launch in Google Colab (Fine-Tuning & Quantization Pipeline)</span>
+              <ExternalLink className="h-3.5 w-3.5" />
             </a>
           </div>
         </div>

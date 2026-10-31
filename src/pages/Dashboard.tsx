@@ -18,7 +18,6 @@ import {
   ShieldCheck,
   Layers,
   Cpu,
-  Database,
   CheckCircle2,
   Lock,
   ChevronRight
@@ -372,24 +371,6 @@ export const Dashboard = () => {
             <FileCode className="h-3.5 w-3.5" />
             <span>Launch on Google Colab</span>
             <ExternalLink className="h-3 w-3" />
-          </a>
-
-          <a
-            href={apiService.getColabNotebookUrl()}
-            download="train_smollm3_3b.ipynb"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-(--app-border) bg-(--app-surface-secondary) px-3.5 py-2.5 text-xs font-semibold text-(--app-text) hover:border-(--app-primary) transition cursor-pointer"
-          >
-            <Download className="h-3.5 w-3.5 text-(--app-primary)" />
-            <span>Download Colab Notebook (.ipynb)</span>
-          </a>
-
-          <a
-            href={apiService.getColabDatasetUrl()}
-            download="synthetic_scam_dataset.csv"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-(--app-border) bg-(--app-surface-secondary) px-3.5 py-2.5 text-xs font-semibold text-(--app-text) hover:border-(--app-primary) transition cursor-pointer"
-          >
-            <Database className="h-3.5 w-3.5 text-(--app-secondary)" />
-            <span>Download Dataset (508 CSV)</span>
           </a>
 
           <button
