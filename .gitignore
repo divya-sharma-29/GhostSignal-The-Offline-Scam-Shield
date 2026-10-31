@@ -6,10 +6,22 @@ coverage/
 *.log
 .env*
 !.env.example
-/.venv/
-/.codex-python/
-/.uv-cache/
-/backend/data/
+
+# Python
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
 .pytest_cache/
+*.db
+*.sqlite3
+
+# Large Model Weights (stored offline or on HuggingFace Hub)
+backend/models/*.gguf
+ghostsignal_smollm3_outputs/
+

@@ -1,25 +1,36 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SAMPLE_MESSAGES } from '../data/sampleMessages';
-import { getSampleLabel, getVoiceMessageLabel, LANGUAGES, useLanguage } from '../i18n';
+import { LANGUAGES, useLanguage, getVoiceMessageLabel } from '../i18n';
+import { analyzeMessageInput } from '../utils/riskEngine';
+import { apiService } from '../services/api';
+import { useScanHistory } from '../hooks/useScanHistory';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { 
   FileText, 
   Image as ImageIcon, 
-  Mic,
-  UploadCloud, 
+  Mic, 
+  MicOff,
   Trash2, 
-  RefreshCw, 
   ShieldAlert, 
   Sparkles, 
-  Info, 
   AlertCircle,
-  FileCheck
+  Loader2,
+  ScanLine,
+  ArrowRight,
+  Eye,
+  FileSearch,
+  Cpu,
+  CheckCircle2,
+  RefreshCw,
+  Volume2
 } from 'lucide-react';
 
 export const Scanner: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { language, t } = useLanguage();
+  const { saveScan } = useScanHistory();
   const initialSampleId = searchParams.get('sample');
 
   const [inputMode, setInputMode] = useState<'text' | 'screenshot' | 'voice'>(
@@ -28,14 +39,36 @@ export const Scanner: React.FC = () => {
   const [messageText, setMessageText] = useState('');
   const [selectedSampleId, setSelectedSampleId] = useState<string | undefined>(undefined);
   
-  // Screenshot upload states
+  // Screenshot upload & OCR states
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const [screenshotName, setScreenshotName] = useState<string>('');
+  const [uploadedImageFile, setUploadedImageFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isExtractingOcr, setIsExtractingOcr] = useState(false);
+  const [ocrEngineUsed, setOcrEngineUsed] = useState<string | null>(null);
+  const [ocrError, setOcrError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Validation error state
+  // Validation & loading states
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanStep, setScanStep] = useState<string>('');
+
+  // Voice Speech Recognition Hook
+  const {
+    isListening,
+    status: speechStatus,
+    recognizedText,
+    startListening,
+    stopListening
+  } = useSpeechRecognition((transcript) => {
+    setMessageText((prev) => {
+      const cleanPrev = prev.trim();
+      return cleanPrev ? `${cleanPrev} ${transcript}` : transcript;
+    });
+    setValidationError(null);
+  });
+
   useEffect(() => {
     const handleVoiceTranscript = (event: Event) => {
       const transcript = (event as CustomEvent<string>).detail;
@@ -48,13 +81,9 @@ export const Scanner: React.FC = () => {
     return () => window.removeEventListener('ghostsignal:voice-message-transcript', handleVoiceTranscript);
   }, []);
 
-  // If navigated with sample query param, load that sample automatically
   useEffect(() => {
     if (initialSampleId) {
-      const found = SAMPLE_MESSAGES.find(s => s.id === initialSampleId);
-      if (found) {
-        loadSample(found.id);
-      }
+      loadSample(initialSampleId);
     }
   }, [initialSampleId]);
 
@@ -68,9 +97,15 @@ export const Scanner: React.FC = () => {
   };
 
   const handleClear = () => {
+    if (isListening) {
+      stopListening();
+    }
     setMessageText('');
     setScreenshotPreview(null);
     setScreenshotName('');
+    setUploadedImageFile(null);
+    setOcrEngineUsed(null);
+    setOcrError(null);
     setSelectedSampleId(undefined);
     setValidationError(null);
     if (fileInputRef.current) {
@@ -78,20 +113,42 @@ export const Scanner: React.FC = () => {
     }
   };
 
-  const handleImageFile = (file: File) => {
-    if (!['image/png', 'image/jpeg'].includes(file.type)) {
-      setValidationError(t('chooseImage'));
+  const handleImageFile = async (file: File) => {
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      setValidationError('Please choose a PNG, JPG, or WebP image.');
       return;
     }
+    setUploadedImageFile(file);
     const reader = new FileReader();
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
       setScreenshotPreview(dataUrl);
       setScreenshotName(file.name);
       setValidationError(null);
-
     };
     reader.readAsDataURL(file);
+
+    // Run On-Device OCR text extraction automatically
+    setIsExtractingOcr(true);
+    setOcrError(null);
+    setScanStep('Running on-device OCR on screenshot...');
+    try {
+      const ocrRes = await apiService.extractImageText(file);
+      if (ocrRes.success && ocrRes.text) {
+        setMessageText(ocrRes.text);
+        setOcrEngineUsed(ocrRes.engine || 'winocr_windows_native');
+      } else {
+        setOcrEngineUsed(null);
+        if (ocrRes.error) {
+          setOcrError(ocrRes.error);
+        }
+      }
+    } catch (err) {
+      console.warn('Live OCR extraction error:', err);
+    } finally {
+      setIsExtractingOcr(false);
+      setScanStep('');
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -112,295 +169,486 @@ export const Scanner: React.FC = () => {
     }
   };
 
-  const handleStartScan = () => {
+  const handleToggleVoice = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      setValidationError(null);
+      startListening();
+    }
+  };
+
+  const handleStartScan = async () => {
+    if (isListening) {
+      stopListening();
+    }
+
     if ((inputMode === 'text' || inputMode === 'voice') && !messageText.trim()) {
       setValidationError(inputMode === 'voice' ? t('startListening') : t('pasteMessage'));
       return;
     }
 
     if (inputMode === 'screenshot' && !screenshotPreview && !messageText.trim()) {
-      setValidationError(t('chooseImage'));
+      setValidationError('Please upload a screenshot image or paste message text.');
       return;
     }
 
     setValidationError(null);
+    setIsScanning(true);
 
-    // Navigate to /analysis with payload
-    navigate('/analysis', {
-      state: {
-        text: messageText.trim(),
-        language: LANGUAGES.find((item) => item.code === language)?.name ?? 'English',
-              sourceType: inputMode,
-        sampleId: selectedSampleId,
-        screenshotUrl: screenshotPreview
+    try {
+      const langName = LANGUAGES.find((item) => item.code === language)?.name ?? 'English';
+      let result;
+
+      if (inputMode === 'screenshot' && uploadedImageFile) {
+        setScanStep('Sending screenshot to OCR and Threat Detection Engine...');
+        result = await apiService.scanImage(uploadedImageFile, langName);
+      } else {
+        setScanStep('Running Unicode Shield & character normalization...');
+        result = await apiService.scanText(messageText.trim(), langName, inputMode === 'voice' ? 'voice' : 'text');
       }
-    });
+
+      if (screenshotPreview && !result.screenshotUrl) {
+        result.screenshotUrl = screenshotPreview;
+      }
+      if (selectedSampleId) {
+        result.sampleName = selectedSampleId;
+      }
+
+      saveScan(result);
+
+      navigate('/results', {
+        state: { result }
+      });
+    } catch (err) {
+      console.error('[Scanner] Scan execution error:', err);
+      // Fallback
+      const langName = LANGUAGES.find((item) => item.code === language)?.name ?? 'English';
+      const fallbackResult = analyzeMessageInput(
+        messageText.trim(),
+        langName,
+        inputMode,
+        selectedSampleId,
+        screenshotPreview || undefined
+      );
+      saveScan(fallbackResult);
+      navigate('/results', { state: { result: fallbackResult } });
+    } finally {
+      setIsScanning(false);
+      setScanStep('');
+    }
   };
 
+  const currentLangObj = LANGUAGES.find(l => l.code === language);
+
   return (
-    <div className="min-h-screen bg-[#0B111E] py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Header */}
-        <div>
-          <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs uppercase tracking-wider mb-1">
-            <ShieldAlert className="w-4 h-4" />
-            <span>{t('localRules')}</span>
-          </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">
-            {t('scannerTitle')}
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">
-            {t('scannerDescription')}
-          </p>
+    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8 space-y-7 text-(--app-text)">
+      {/* Header */}
+      <div className="border-b border-(--app-border) pb-5">
+        <div className="flex items-center gap-2 text-xs font-mono font-semibold uppercase tracking-wider text-(--app-primary) mb-1.5">
+          <ShieldAlert className="w-4 h-4" />
+          <span>Local Engine · Zero Network Exposure</span>
         </div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-(--app-text)">
+          {t('scannerTitle')}
+        </h1>
+        <p className="text-xs sm:text-sm text-(--app-text-muted) mt-1">
+          {t('scannerDescription')}
+        </p>
 
-        {/* Input Method Switcher */}
-        <div className="flex flex-col gap-3 border-b border-slate-800 pb-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="grid w-full grid-cols-3 gap-1 rounded-xl border border-slate-800 bg-slate-900 p-1 sm:flex sm:w-auto sm:items-center sm:gap-2">
-            <button
-              onClick={() => setInputMode('text')}
-              className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-center text-xs font-semibold leading-tight transition-all cursor-pointer sm:gap-2 sm:px-4 ${
-                inputMode === 'text'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>{t('pastedText')}</span>
-            </button>
-            <button
-              onClick={() => setInputMode('screenshot')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                inputMode === 'screenshot'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <ImageIcon className="w-3.5 h-3.5" />
-              <span>{t('screenshot')}</span>
-            </button>
-            <button
-              onClick={() => setInputMode('voice')}
-              className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-center text-xs font-semibold leading-tight transition-all cursor-pointer sm:gap-2 sm:px-4 ${inputMode === 'voice' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-white'}`}
-            >
-              <Mic className="w-3.5 h-3.5" />
-              <span>{getVoiceMessageLabel(language)}</span>
-            </button>
-          </div>
-
-          <div className="self-end text-xs text-slate-400 sm:self-auto">{t('language')}: {LANGUAGES.find((item) => item.code === language)?.native}</div>
-        </div>
-
-        {/* Sample Message Quick Buttons */}
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-              {t('examples')}:
+        {/* Local AI Engine Status Pill */}
+        <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-(--app-border)/60">
+          <div className="inline-flex items-center gap-2 rounded-full border border-(--app-primary)/30 bg-(--app-primary)/10 px-3 py-1 text-xs font-semibold text-(--app-primary)">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-(--app-success) opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-(--app-success)"></span>
             </span>
-            <span className="text-[11px] text-slate-400 font-mono">
-              <button onClick={() => loadSample(SAMPLE_MESSAGES[0].id)} className="text-cyan-300 hover:text-cyan-200">{t('trySample')}</button>
-            </span>
+            <Cpu className="w-3.5 h-3.5 text-(--app-primary)" />
+            <span>AI Engine: <strong>SmolLM3-3B Quantized</strong> (Offline Local AI)</span>
           </div>
+          <span className="text-[11px] font-mono text-(--app-text-muted)">
+            Unicode Shield · On-Device OCR · Mic Active
+          </span>
+        </div>
+      </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-            {SAMPLE_MESSAGES.slice(0, 3).map((sample, index) => (
-              <button
-                key={sample.id}
-                onClick={() => loadSample(sample.id)}
-                className={`p-2.5 rounded-lg border text-left transition-all text-xs cursor-pointer ${
-                  selectedSampleId === sample.id
-                    ? 'bg-cyan-950/40 border-cyan-500/50 text-cyan-200 ring-1 ring-cyan-500/30'
-                    : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-700'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-1 mb-1">
-                  <span className="font-semibold truncate">{getSampleLabel(language, index)}</span>
-                  <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded font-bold ${
-                    sample.riskLevel === 'HIGH' ? 'text-red-400 bg-red-950/60' :
-                    sample.riskLevel === 'MEDIUM' ? 'text-amber-300 bg-amber-950/60' :
-                    'text-emerald-400 bg-emerald-950/60'
-                  }`}>
-                    {sample.riskLevel === 'HIGH' ? t('riskHigh') : sample.riskLevel === 'MEDIUM' ? t('riskMedium') : t('riskLow')}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-400 line-clamp-1 italic">
-                  "{sample.text}"
-                </p>
-              </button>
-            ))}
-          </div>
+      {/* Input Method Switcher */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex rounded-xl border border-(--app-border) bg-(--app-surface-secondary) p-1">
+          <button
+            type="button"
+            onClick={() => {
+              if (isListening) stopListening();
+              setInputMode('text');
+            }}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition cursor-pointer ${
+              inputMode === 'text'
+                ? 'bg-(--app-card) text-(--app-primary) shadow-2xs'
+                : 'text-(--app-text-muted) hover:text-(--app-text)'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>Pasted Text</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (isListening) stopListening();
+              setInputMode('screenshot');
+            }}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition cursor-pointer ${
+              inputMode === 'screenshot'
+                ? 'bg-(--app-card) text-(--app-primary) shadow-2xs'
+                : 'text-(--app-text-muted) hover:text-(--app-text)'
+            }`}
+          >
+            <ImageIcon className="w-3.5 h-3.5" />
+            <span>Screenshot OCR</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setInputMode('voice');
+            }}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition cursor-pointer ${
+              inputMode === 'voice'
+                ? 'bg-(--app-card) text-(--app-primary) shadow-2xs'
+                : 'text-(--app-text-muted) hover:text-(--app-text)'
+            }`}
+          >
+            <Mic className={`w-3.5 h-3.5 ${isListening ? 'text-(--app-danger) animate-pulse' : ''}`} />
+            <span>Voice / Mic</span>
+          </button>
         </div>
 
-        {/* Validation Error Alert */}
-        {validationError && (
-          <div className="flex items-center gap-3 p-3.5 rounded-xl bg-red-950/40 border border-red-500/40 text-red-200 text-sm">
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-            <span>{validationError}</span>
-          </div>
+        {/* Clear Option */}
+        {(messageText || screenshotPreview) && (
+          <button
+            type="button"
+            onClick={handleClear}
+            disabled={isScanning}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-(--app-danger) hover:opacity-80 cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Clear / Reset</span>
+          </button>
         )}
+      </div>
 
-        {/* Input Area: Method A (Textarea) */}
+      {/* Sample Message Quick Buttons */}
+      <div className="rounded-2xl border border-(--app-border) bg-(--app-card) p-4 space-y-3 shadow-2xs">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-mono font-bold uppercase tracking-wider text-(--app-text) flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-(--app-secondary)" />
+            <span>{t('examples')}:</span>
+          </span>
+          <span className="text-[11px] text-(--app-text-muted)">Click to load into scanner</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {SAMPLE_MESSAGES.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => loadSample(s.id)}
+              disabled={isScanning}
+              className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition cursor-pointer ${
+                selectedSampleId === s.id
+                  ? 'border-(--app-primary) bg-(--app-surface-secondary) text-(--app-primary) font-semibold'
+                  : 'border-(--app-border) bg-(--app-surface-secondary) text-(--app-text-muted) hover:text-(--app-text) hover:border-(--app-primary)'
+              }`}
+            >
+              {s.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Input Area */}
+      <div className="space-y-4">
+        {/* TEXT INPUT MODE */}
         {inputMode === 'text' && (
           <div className="space-y-2">
-            <div className="relative">
-              <textarea
-                value={messageText}
-                onChange={(e) => {
-                  setMessageText(e.target.value);
-                  setSelectedSampleId(undefined);
-                  if (validationError) setValidationError(null);
-                }}
-                rows={7}
-                maxLength={2000}
-                placeholder={t('pasteMessage')}
-                className="w-full bg-slate-950/90 border border-slate-800 rounded-xl p-4 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/40 transition-all font-sans leading-relaxed resize-y"
-              />
-              
-              {/* Character Counter */}
-              <div className="absolute bottom-3 right-3 text-xs text-slate-500 font-mono tabular-nums">
-                {messageText.length} / 2,000 characters
-              </div>
+            <div className="flex items-center justify-between">
+              <label htmlFor="message-text" className="block text-xs font-bold uppercase tracking-wider text-(--app-text-muted)">
+                Message Text to Scan
+              </label>
+              <button
+                type="button"
+                onClick={handleToggleVoice}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold border transition cursor-pointer ${
+                  isListening
+                    ? 'border-(--app-danger) bg-(--app-danger)/15 text-(--app-danger) animate-pulse'
+                    : 'border-(--app-border) bg-(--app-surface-secondary) text-(--app-primary) hover:border-(--app-primary)'
+                }`}
+                title={isListening ? 'Stop listening' : 'Dictate with microphone'}
+              >
+                {isListening ? <MicOff className="w-3.5 h-3.5 text-(--app-danger)" /> : <Mic className="w-3.5 h-3.5 text-(--app-primary)" />}
+                <span>{isListening ? 'Stop Recording' : 'Dictate with Mic'}</span>
+              </button>
             </div>
-
-            <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                <span>{t('localRules')}. {t('aiUnavailable')}</span>
+            <textarea
+              id="message-text"
+              rows={6}
+              value={messageText}
+              onChange={(e) => {
+                setMessageText(e.target.value);
+                setSelectedSampleId(undefined);
+                setValidationError(null);
+              }}
+              disabled={isScanning}
+              placeholder="Paste suspicious SMS, WhatsApp message, email excerpt, or URL here..."
+              className="w-full rounded-2xl border border-(--app-border) bg-(--app-surface-secondary) p-4 text-sm font-mono text-(--app-text) placeholder:text-(--app-text-muted)/60 focus:outline-none focus:ring-2 focus:ring-(--app-primary) transition resize-y"
+            />
+            {isListening && (
+              <div className="rounded-xl border border-(--app-danger)/30 bg-(--app-danger)/10 p-2.5 flex items-center justify-between text-xs text-(--app-danger)">
+                <span className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-(--app-danger) animate-ping" />
+                  <strong>Listening:</strong> {recognizedText || 'Speak now...'}
+                </span>
+                <span className="font-mono text-[10px]">{currentLangObj?.name || 'English'}</span>
               </div>
-              {messageText && (
-                <button
-                  onClick={handleClear}
-                  className="flex items-center gap-1 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>{t('clearInput')}</span>
-                </button>
-              )}
+            )}
+            <div className="flex items-center justify-between text-[11px] text-(--app-text-muted)">
+              <span>Supports multilingual input & Unicode characters</span>
+              <span>{messageText.length} characters</span>
             </div>
           </div>
         )}
 
+        {/* VOICE INPUT MODE */}
         {inputMode === 'voice' && (
-          <section className="rounded-xl border border-(--app-border) bg-(--app-card) p-5 sm:p-7" aria-label={getVoiceMessageLabel(language)}>
-            <div className="mx-auto flex max-w-xl flex-col items-center gap-4 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-(--app-tint) text-(--app-primary)"><Mic className="h-7 w-7" /></div>
-              <h2 className="text-lg font-semibold text-white">{getVoiceMessageLabel(language)}</h2>
-              <p className="text-sm text-slate-400">{t('assistantDisclosure')}</p>
-              <button onClick={() => window.dispatchEvent(new Event('ghostsignal:listen-message'))} className="inline-flex min-h-14 items-center justify-center gap-3 rounded-xl bg-(--app-primary) px-6 py-3 text-sm font-semibold text-(--app-on-primary)">
-                <Mic className="h-5 w-5" />{t('startListening')}
-              </button>
-              {messageText && <p className="w-full rounded-lg border border-(--app-border) bg-(--app-card-muted) p-4 text-left text-sm text-slate-200">{messageText}</p>}
-              {!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window) && <p role="status" className="text-sm text-amber-600">{t('speechUnavailable')}</p>}
+          <div className="rounded-2xl border border-(--app-border) bg-(--app-card) p-6 sm:p-8 text-center space-y-6 shadow-sm">
+            <div className="space-y-1">
+              <h3 className="text-base sm:text-lg font-bold text-(--app-text)">
+                Voice Message Dictation
+              </h3>
+              <p className="text-xs text-(--app-text-muted) max-w-md mx-auto">
+                Speak or play a suspicious audio message. GhostSignal transcribes it locally using on-device speech recognition without sending audio to third parties.
+              </p>
             </div>
-          </section>
-        )}
 
-        {/* Input Method B (Screenshot Upload) */}
-        {inputMode === 'screenshot' && (
-          <div className="space-y-4">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={(e) => {
-                if (e.target.files && e.target.files[0]) {
-                  handleImageFile(e.target.files[0]);
-                }
-              }}
-              accept="image/png,image/jpeg"
-              className="hidden"
-            />
-
-            {!screenshotPreview ? (
-              <div
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center cursor-pointer transition-all ${
-                  isDragging
-                    ? 'border-cyan-400 bg-cyan-950/20'
-                    : 'border-slate-800 hover:border-slate-700 bg-slate-950/60 hover:bg-slate-900/50'
+            {/* Big Interactive Mic Button */}
+            <div className="flex flex-col items-center justify-center py-4">
+              <button
+                type="button"
+                onClick={handleToggleVoice}
+                className={`relative flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-full transition shadow-lg cursor-pointer ${
+                  isListening
+                    ? 'bg-(--app-danger) text-white scale-105 shadow-(--app-danger)/30 animate-pulse'
+                    : 'bg-(--app-primary) text-(--app-on-primary) hover:scale-105 shadow-(--app-primary)/30'
                 }`}
               >
-                <div className="w-14 h-14 rounded-2xl bg-cyan-950/50 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mx-auto mb-4">
-                  <UploadCloud className="w-7 h-7" />
-                </div>
-                <h3 className="text-base font-semibold text-white mb-1">{t('uploadScreenshot')}</h3>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto mb-4">
-                  {t('chooseImage')}
-                </p>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 text-xs font-medium text-slate-300">
-                  <ImageIcon className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>{t('chooseImage')}</span>
-                </div>
-              </div>
-            ) : (
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileCheck className="w-4 h-4 text-emerald-400" />
-                    <span className="text-xs font-mono text-slate-200 truncate max-w-xs sm:max-w-md">
-                      {screenshotName || 'uploaded_message_screenshot.png'}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setScreenshotPreview(null);
-                      setScreenshotName('');
-                    }}
-                    className="text-xs text-slate-400 hover:text-red-400 flex items-center gap-1 transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>{t('clearInput')}</span>
-                  </button>
-                </div>
+                {isListening ? (
+                  <>
+                    <span className="absolute inset-0 rounded-full border-4 border-red-400 animate-ping opacity-60"></span>
+                    <MicOff className="h-10 w-10 sm:h-12 sm:w-12 text-white" />
+                  </>
+                ) : (
+                  <Mic className="h-10 w-10 sm:h-12 sm:w-12 text-white" />
+                )}
+              </button>
 
-                {/* Image Preview Box */}
-                <div className="relative rounded-lg overflow-hidden border border-slate-800 max-h-72 bg-slate-900 flex items-center justify-center">
+              <div className="mt-4 space-y-1">
+                <span className={`text-sm font-bold block ${isListening ? 'text-(--app-danger) animate-pulse' : 'text-(--app-text)'}`}>
+                  {isListening ? 'Listening... Speak your message now' : 'Tap to Start Speaking'}
+                </span>
+                <span className="text-xs text-(--app-text-muted) block">
+                  Language: <strong>{currentLangObj?.name || 'English'} ({currentLangObj?.native || 'Default'})</strong>
+                </span>
+              </div>
+            </div>
+
+            {/* Audio Waveform Animation when listening */}
+            {isListening && (
+              <div className="flex items-center justify-center gap-1.5 h-6">
+                {[40, 70, 100, 60, 90, 45, 80, 55, 95, 30].map((h, i) => (
+                  <span
+                    key={i}
+                    className="w-1.5 bg-(--app-danger) rounded-full animate-bounce"
+                    style={{
+                      height: `${h}%`,
+                      animationDelay: `${i * 0.08}s`,
+                      animationDuration: '0.6s'
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+
+            {speechStatus && (
+              <p className="text-xs font-medium text-(--app-primary)">
+                {speechStatus}
+              </p>
+            )}
+
+            {/* Transcribed text box */}
+            <div className="space-y-2 text-left">
+              <label htmlFor="voice-message-text" className="block text-xs font-bold uppercase tracking-wider text-(--app-text-muted)">
+                Transcribed Message Text
+              </label>
+              <textarea
+                id="voice-message-text"
+                rows={4}
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                placeholder={isListening ? 'Listening... (Speak words like OTP, KYC, UPI, bank, urgency)' : 'Your spoken words will appear here...'}
+                className="w-full rounded-xl border border-(--app-border) bg-(--app-surface-secondary) p-3.5 text-xs font-mono text-(--app-text) placeholder:text-(--app-text-muted)/60 focus:outline-none focus:ring-2 focus:ring-(--app-primary)"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* SCREENSHOT OCR INPUT MODE */}
+        {inputMode === 'screenshot' && (
+          <div className="space-y-4">
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`rounded-2xl border-2 border-dashed p-6 text-center transition cursor-pointer ${
+                isDragging 
+                  ? 'border-(--app-primary) bg-(--app-surface-secondary)' 
+                  : 'border-(--app-border) bg-(--app-surface-secondary) hover:border-(--app-primary)'
+              }`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    handleImageFile(e.target.files[0]);
+                  }
+                }}
+              />
+              <ImageIcon className="h-8 w-8 text-(--app-primary) mx-auto mb-2 opacity-80" />
+              <p className="text-sm font-bold text-(--app-text)">
+                {screenshotName ? screenshotName : 'Click to select or drag and drop a screenshot'}
+              </p>
+              <p className="text-xs text-(--app-text-muted) mt-1">
+                PNG, JPG, or WebP screenshot images · Automated on-device OCR extraction
+              </p>
+            </div>
+
+            {/* OCR Extracting Spinner */}
+            {isExtractingOcr && (
+              <div className="rounded-xl border border-(--app-primary)/40 bg-(--app-primary)/10 p-4 flex items-center justify-center gap-3 text-xs font-bold text-(--app-primary)">
+                <Loader2 className="h-4 w-4 animate-spin text-(--app-primary)" />
+                <span>Running on-device OCR on screenshot (Windows Native / Local)...</span>
+              </div>
+            )}
+
+            {/* Screenshot Preview */}
+            {screenshotPreview && (
+              <div className="rounded-2xl border border-(--app-border) bg-(--app-card) p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-(--app-text) flex items-center gap-1.5">
+                    <Eye className="w-3.5 h-3.5 text-(--app-primary)" />
+                    Screenshot Preview
+                  </span>
+                  <span className="text-[11px] text-(--app-text-muted)">{screenshotName}</span>
+                </div>
+                <div className="max-h-72 overflow-hidden rounded-xl border border-(--app-border) bg-black/5 flex items-center justify-center p-2">
                   <img
                     src={screenshotPreview}
-                    alt="Suspicious message screenshot preview"
-                    className="max-h-72 w-auto object-contain mx-auto"
+                    alt="Uploaded screenshot preview"
+                    className="max-h-72 w-auto object-contain rounded-lg"
                   />
-                </div>
-
-                {/* Screenshot text-recognition availability */}
-                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-400">
-                  <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold text-slate-200">{t('ocrUnavailable')}</span>
-                  </div>
                 </div>
               </div>
             )}
+
+            {/* OCR Extraction Status Banner */}
+            {ocrEngineUsed && messageText && (
+              <div className="rounded-xl border border-(--app-success)/30 bg-(--app-success)/10 p-3.5 flex items-start gap-3 text-xs">
+                <CheckCircle2 className="w-4 h-4 text-(--app-success) shrink-0 mt-0.5" />
+                <div className="space-y-0.5 flex-1">
+                  <p className="font-bold text-(--app-text) flex items-center gap-2">
+                    <span>Text Successfully Extracted via On-Device OCR</span>
+                    <span className="rounded-md bg-(--app-success)/20 px-2 py-0.5 text-[10px] font-mono text-(--app-success)">
+                      {ocrEngineUsed === 'winocr_windows_native' ? 'Windows Native OCR' : ocrEngineUsed}
+                    </span>
+                  </p>
+                  <p className="text-(--app-text-muted) leading-relaxed">
+                    Text extracted from the screenshot is loaded below. You can verify or edit the text before scanning.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {screenshotPreview && !messageText && !isExtractingOcr && (
+              <div className="rounded-xl border border-(--app-border) bg-(--app-surface-secondary) p-3.5 flex items-start gap-3 text-xs">
+                <FileSearch className="w-4 h-4 text-(--app-primary) shrink-0 mt-0.5" />
+                <div className="space-y-0.5 flex-1">
+                  <p className="font-bold text-(--app-text)">No text detected automatically</p>
+                  <p className="text-(--app-text-muted) leading-relaxed">
+                    {ocrError || 'Ensure the image has clear contrast, or paste the message text manually below for threat analysis.'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label htmlFor="screenshot-notes" className="block text-xs font-bold uppercase tracking-wider text-(--app-text-muted)">
+                  Extracted / Transcribed Message Text
+                </label>
+                <button
+                  type="button"
+                  onClick={handleToggleVoice}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold border transition cursor-pointer ${
+                    isListening
+                      ? 'border-(--app-danger) bg-(--app-danger)/15 text-(--app-danger) animate-pulse'
+                      : 'border-(--app-border) bg-(--app-surface-secondary) text-(--app-primary) hover:border-(--app-primary)'
+                  }`}
+                  title={isListening ? 'Stop listening' : 'Dictate with microphone'}
+                >
+                  {isListening ? <MicOff className="w-3.5 h-3.5 text-(--app-danger)" /> : <Mic className="w-3.5 h-3.5 text-(--app-primary)" />}
+                  <span>{isListening ? 'Stop Recording' : 'Add with Mic'}</span>
+                </button>
+              </div>
+              <textarea
+                id="screenshot-notes"
+                rows={4}
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                placeholder="Extracted text from your screenshot will appear here automatically..."
+                className="w-full rounded-xl border border-(--app-border) bg-(--app-surface-secondary) p-3.5 text-xs font-mono text-(--app-text) placeholder:text-(--app-text-muted)/60 focus:outline-none focus:ring-2 focus:ring-(--app-primary)"
+              />
+            </div>
           </div>
         )}
+      </div>
 
-        {/* Action Toolbar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-800">
-          <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
-            <span className="w-2 h-2 rounded-full bg-cyan-400" />
-            <span>{t('localRules')} · {t('aiUnavailable')}</span>
-          </div>
-
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button
-              onClick={handleClear}
-              className="w-1/2 sm:w-auto px-4 py-2.5 text-xs font-medium text-slate-300 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl transition-colors cursor-pointer"
-            >
-              {t('clearInput')}
-            </button>
-
-            <button
-              onClick={handleStartScan}
-              className="w-1/2 sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 text-xs font-bold text-slate-950 bg-cyan-400 hover:bg-cyan-300 active:bg-cyan-500 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.3)] transition-all cursor-pointer font-sans"
-            >
-              <ShieldAlert className="w-4 h-4" />
-              <span>{t('scanMessage')}</span>
-            </button>
-          </div>
+      {validationError && (
+        <div className="rounded-xl border border-(--app-danger)/30 bg-(--app-danger)/10 p-3.5 text-xs text-(--app-danger) flex items-start gap-2.5">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{validationError}</span>
         </div>
+      )}
+
+      <div className="pt-2">
+        <button
+          type="button"
+          onClick={handleStartScan}
+          disabled={isScanning || isExtractingOcr}
+          className="w-full flex items-center justify-center gap-2.5 rounded-2xl bg-(--app-primary) text-(--app-on-primary) py-4 px-6 text-sm font-bold shadow-sm transition hover:opacity-95 active:scale-[0.99] cursor-pointer disabled:opacity-70"
+        >
+          {isScanning ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>{scanStep || 'Scanning message...'}</span>
+            </>
+          ) : (
+            <>
+              <ScanLine className="w-5 h-5" />
+              <span>Scan Message Now</span>
+              <ArrowRight className="w-4 h-4 ml-1" />
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

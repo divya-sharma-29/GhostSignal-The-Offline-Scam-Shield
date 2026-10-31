@@ -19,8 +19,54 @@ export interface RedFlag {
 
 export interface HighlightSpan {
   text: string;
-  category?: RedFlagCategory;
+  category?: RedFlagCategory | 'unicode_anomaly';
   label?: string;
+}
+
+export type UnicodeFindingCategory = 
+  | 'invisible_char'
+  | 'mixed_script'
+  | 'confusable'
+  | 'suspicious_separator'
+  | 'obfuscated_keyword';
+
+export interface UnicodeCharFinding {
+  char: string;
+  codePoint: string;
+  index: number;
+  category: UnicodeFindingCategory;
+  explanation: string;
+  expectedChar?: string;
+}
+
+export interface UnicodeShieldReport {
+  hasAnomalies: boolean;
+  originalText: string;
+  normalizedText: string;
+  findings: UnicodeCharFinding[];
+  invisibleCount: number;
+  mixedScriptCount: number;
+  confusableCount: number;
+  suspiciousSeparatorCount: number;
+  obfuscatedKeywords: string[];
+  summary: string;
+  isIndicSafe: boolean;
+}
+
+export interface AIVerdict {
+  modelName: string;
+  scamProbability: number;
+  riskScore: number;
+  riskLevel: RiskLevel;
+  scamType: string;
+  redFlags: string[];
+  obfuscationType?: string;
+  explanation: string;
+  recommendedAction: string;
+  confidence: number;
+  inferenceTimeMs: number;
+  engine: string;
+  isOffline: boolean;
 }
 
 export interface ScanResult {
@@ -34,25 +80,11 @@ export interface ScanResult {
   redFlags: RedFlag[];
   plainLanguageExplanation: string;
   safetyRecommendations: string[];
+  unicodeShield?: UnicodeShieldReport;
+  aiVerdict?: AIVerdict;
   sampleName?: string;
   screenshotUrl?: string;
-  /** Findings returned by a trusted analysis service. The client does not derive these. */
-  unicodeSecurity?: UnicodeSecurityFindings;
-}
-
-export interface UnicodeSecurityFinding {
-  kind: 'invisible' | 'mixed-script' | 'homoglyph' | 'separator' | 'obfuscated-keyword' | 'suspicious-url';
-  text: string;
-  explanation: string;
-  start?: number;
-  end?: number;
-  codePoints?: string[];
-  scripts?: string[];
-}
-
-export interface UnicodeSecurityFindings {
-  findings: UnicodeSecurityFinding[];
-  normalizedForAnalysis?: string;
+  isOfflineScan?: boolean;
 }
 
 export interface SampleMessage {
@@ -63,4 +95,19 @@ export interface SampleMessage {
   category: string;
   text: string;
   description: string;
+}
+
+export type SecurityUpdateStatus = 
+  | 'verified'
+  | 'update_available'
+  | 'update_rejected'
+  | 'offline_rules'
+  | 'verification_unavailable';
+
+export interface SecurityUpdateInfo {
+  installedVersion: string;
+  lastSuccessfulUpdate: string | null;
+  status: SecurityUpdateStatus;
+  availableVersion?: string;
+  verificationDetails?: string;
 }

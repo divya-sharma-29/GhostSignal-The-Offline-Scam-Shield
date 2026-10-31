@@ -1,4 +1,4 @@
-import { Languages } from 'lucide-react';
+import { ChevronDown, Languages } from 'lucide-react';
 import { LANGUAGES, useLanguage } from '../i18n';
 
 interface LanguageSelectorProps {
@@ -9,17 +9,33 @@ export const LanguageSelector = ({ compact = false }: LanguageSelectorProps) => 
   const { language, setLanguage, t } = useLanguage();
 
   return (
-    <label className={`inline-flex items-center gap-2 ${compact ? 'text-xs' : 'text-sm'}`}>
-      <Languages className="h-4 w-4 shrink-0 text-cyan-300" />
-      <span className={compact ? 'sr-only' : 'text-slate-400'}>{t('language')}</span>
-      <select
-        aria-label={t('chooseLanguage')}
-        value={language}
-        onChange={(event) => setLanguage(event.target.value as typeof language)}
-        className="min-w-0 rounded-md border border-slate-600/70 bg-slate-950/80 px-2.5 py-2 text-sm text-slate-100 outline-none focus:border-cyan-300"
-      >
-        {LANGUAGES.map((item) => <option key={item.code} value={item.code}>{item.native}</option>)}
-      </select>
-    </label>
+    <div className={`inline-flex items-center ${compact ? '' : 'gap-1.5'}`}>
+      {!compact && (
+        <span className="hidden sm:inline-block text-xs font-semibold text-(--app-text-secondary) whitespace-nowrap">
+          {t('language')}:
+        </span>
+      )}
+      <div className="relative inline-flex items-center">
+        <Languages className="pointer-events-none absolute left-2 h-3.5 w-3.5 text-(--app-primary) shrink-0 z-10" />
+        <select
+          aria-label={t('chooseLanguage')}
+          value={language}
+          onChange={(event) => setLanguage(event.target.value as typeof language)}
+          className="h-9 appearance-none rounded-xl border border-(--app-border) bg-(--app-surface-secondary) pl-7 pr-6 text-xs font-bold uppercase tracking-wider text-(--app-text) outline-none transition hover:border-(--app-primary) focus:border-(--app-primary) focus:ring-1 focus:ring-(--app-primary) cursor-pointer"
+        >
+          {LANGUAGES.map((item) => (
+            <option
+              key={item.code}
+              value={item.code}
+              title={`${item.name} (${item.native})`}
+              className="bg-(--app-surface) text-(--app-text) font-semibold py-1"
+            >
+              {item.code.toUpperCase()}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-1.5 h-3.5 w-3.5 text-(--app-text-secondary) shrink-0" />
+      </div>
+    </div>
   );
 };

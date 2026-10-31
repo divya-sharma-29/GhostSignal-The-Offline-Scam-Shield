@@ -1,6 +1,6 @@
 import React from 'react';
 import { RiskLevel } from '../types';
-import { ShieldAlert, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, ShieldCheck, HelpCircle } from 'lucide-react';
 import { useLanguage } from '../i18n';
 
 interface RiskBadgeProps {
@@ -15,30 +15,27 @@ export const RiskBadge: React.FC<RiskBadgeProps> = ({
   showIcon = true 
 }) => {
   const { t } = useLanguage();
+
   const configs = {
     HIGH: {
       label: t('riskHigh'),
-      sub: 'Critical Threat Detected',
-      colorClasses: 'text-red-400 bg-red-950/40 border border-red-500/40 shadow-[0_0_12px_rgba(239,68,68,0.15)]',
+      colorClasses: 'text-(--app-danger) bg-(--app-danger)/15 border border-(--app-danger)/30',
       icon: ShieldAlert
     },
     MEDIUM: {
       label: t('riskMedium'),
-      sub: 'Suspicious Indicators',
-      colorClasses: 'text-amber-300 bg-amber-950/40 border border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.15)]',
+      colorClasses: 'text-(--app-warning) bg-(--app-warning)/15 border border-(--app-warning)/30',
       icon: AlertTriangle
     },
     LOW: {
       label: t('riskLow'),
-      sub: 'No Major Threats Found',
-      colorClasses: 'text-emerald-400 bg-emerald-950/40 border border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.15)]',
+      colorClasses: 'text-(--app-success) bg-(--app-success)/15 border border-(--app-success)/30',
       icon: ShieldCheck
     },
     UNASSESSED: {
       label: t('unassessed'),
-      sub: 'Text extraction unavailable',
-      colorClasses: 'text-slate-300 bg-slate-800 border border-slate-600',
-      icon: AlertTriangle
+      colorClasses: 'text-(--app-text-muted) bg-(--app-surface-secondary) border border-(--app-border)',
+      icon: HelpCircle
     }
   };
 
@@ -46,14 +43,16 @@ export const RiskBadge: React.FC<RiskBadgeProps> = ({
   const Icon = current.icon;
 
   const sizeClasses = {
-    sm: 'text-xs px-2.5 py-1 gap-1.5 font-medium',
-    md: 'text-sm px-3.5 py-1.5 gap-2 font-semibold',
-    lg: 'text-base px-4 py-2.5 gap-2.5 font-bold tracking-wide'
+    sm: 'text-xs px-2.5 py-1 gap-1.5 font-medium rounded-md',
+    md: 'text-xs sm:text-sm px-3.5 py-1.5 gap-2 font-semibold rounded-lg',
+    lg: 'text-sm sm:text-base px-4 py-2 gap-2.5 font-bold tracking-wide rounded-xl'
   };
 
   return (
-    <div className={`inline-flex items-center rounded-lg ${current.colorClasses} ${sizeClasses[size]}`}>
-      {showIcon && <Icon className={size === 'sm' ? 'w-3.5 h-3.5 shrink-0' : size === 'lg' ? 'w-5 h-5 shrink-0' : 'w-4 h-4 shrink-0'} />}
+    <div className={`inline-flex items-center shadow-2xs ${current.colorClasses} ${sizeClasses[size]}`}>
+      {showIcon && (
+        <Icon className={size === 'sm' ? 'w-3.5 h-3.5 shrink-0' : size === 'lg' ? 'w-5 h-5 shrink-0' : 'w-4 h-4 shrink-0'} />
+      )}
       <span>{current.label}</span>
     </div>
   );

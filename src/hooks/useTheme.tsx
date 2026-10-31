@@ -5,41 +5,53 @@ export type Theme = 'light' | 'dark';
 interface ThemeContextValue {
   theme: Theme;
   toggleTheme: () => void;
+  setTheme: (theme: Theme) => void;
 }
 
 const THEME_STORAGE_KEY = 'ghostsignal_theme_v1';
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function getInitialTheme(): Theme {
-  const systemTheme = () => window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     if (stored === 'light' || stored === 'dark') return stored;
   } catch {
-    return systemTheme();
+    // Fall back to system preference
   }
-  return systemTheme();
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [theme, setThemeState] = useState<Theme>(getInitialTheme);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
     try {
       localStorage.setItem(THEME_STORAGE_KEY, theme);
     } catch {
-      return;
+      // Local storage unavailable
     }
   }, [theme]);
 
-  const value = {
-    theme,
-    toggleTheme: () => setTheme((current) => current === 'dark' ? 'light' : 'dark')
+  const toggleTheme = () => {
+    setThemeState((current) => (current === 'dark' ? 'light' : 'dark'));
   };
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  const setTheme = (newTheme: Theme) => {
+    setThemeState(newTheme);
+  };
+
+  return (
+    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
 }
 
 export function useTheme() {

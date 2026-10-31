@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { ShieldLogo } from '../components/ShieldLogo';
 import { analyzeMessageInput } from '../utils/riskEngine';
+import { apiService } from '../services/api';
 import { useScanHistory } from '../hooks/useScanHistory';
 import { useLanguage, type TranslationKey } from '../i18n';
 import { 
@@ -37,7 +39,7 @@ const STAGES: Array<{ id: number; title: TranslationKey; icon: React.ElementType
 export const Analysis: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const state = (location.state || {}) as AnalysisState;
   const { saveScan } = useScanHistory();
 
@@ -45,17 +47,24 @@ export const Analysis: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const completedRef = useRef(false);
+  const scanPromiseRef = useRef<Promise<any> | null>(null);
 
   if (!location.state) return <Navigate to="/scanner" replace />;
 
-  // If no text was passed, fallback to default sample or redirect
   const messageText = state.text?.trim() || '';
   const scanLanguage = state.language || 'English';
   const sourceType = state.sourceType || 'text';
   const sampleId = state.sampleId;
   const screenshotUrl = state.screenshotUrl;
 
-  // Progress indicates the local rules-check workflow.
+  // Initiate scan in the background concurrently
+  useEffect(() => {
+    if (messageText) {
+      scanPromiseRef.current = apiService.scanText(messageText, scanLanguage, sourceType);
+    }
+  }, [messageText, scanLanguage, sourceType]);
+
+  // Progress animation runner
   useEffect(() => {
     let active = true;
     const totalDuration = STAGES.reduce((acc, s) => acc + s.durationMs, 0);
@@ -63,13 +72,9 @@ export const Analysis: React.FC = () => {
     const progressIncrement = 100 / (totalDuration / intervalTime);
 
     const timer = setInterval(() => {
-      setProgress(prev => {
-        const next = Math.min(prev + progressIncrement, 100);
-        return next;
-      });
+      setProgress(prev => Math.min(prev + progressIncrement, 100));
     }, intervalTime);
 
-    // Stage progression runner
     let accumulated = 0;
     STAGES.forEach((stage, idx) => {
       accumulated += stage.durationMs;
@@ -77,7 +82,6 @@ export const Analysis: React.FC = () => {
         if (active) {
           setCurrentStageIndex(idx);
           if (idx === STAGES.length - 1) {
-            // Last stage done
             setTimeout(() => {
               if (active) {
                 completeAnalysis();
@@ -94,23 +98,36 @@ export const Analysis: React.FC = () => {
     };
   }, []);
 
-  const completeAnalysis = () => {
+  const completeAnalysis = async () => {
     if (completedRef.current) return;
     completedRef.current = true;
     setIsCompleted(true);
-    // Compute result
-    const result = analyzeMessageInput(
-      messageText,
-      scanLanguage,
-      sourceType,
-      sampleId,
-      screenshotUrl
-    );
 
-    // Save to persistent localStorage history
-    saveScan({ ...result, screenshotUrl: undefined });
+    let result;
+    try {
+      if (scanPromiseRef.current) {
+        result = await scanPromiseRef.current;
+      } else if (messageText) {
+        result = await apiService.scanText(messageText, scanLanguage, sourceType);
+      }
+    } catch (e) {
+      console.warn('[Analysis] Falling back to local offline engine:', e);
+      result = analyzeMessageInput(messageText, scanLanguage, sourceType, sampleId, screenshotUrl);
+    }
 
-    // Navigate to results
+    if (!result) {
+      result = analyzeMessageInput(messageText, scanLanguage, sourceType, sampleId, screenshotUrl);
+    }
+
+    if (screenshotUrl && !result.screenshotUrl) {
+      result.screenshotUrl = screenshotUrl;
+    }
+    if (sampleId) {
+      result.sampleName = sampleId;
+    }
+
+    saveScan({ ...result });
+
     navigate('/results', {
       replace: true,
       state: { result }
@@ -122,49 +139,54 @@ export const Analysis: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B111E] py-12 px-4 sm:px-6 lg:px-8 flex flex-col justify-center items-center">
+    <div className="min-h-screen bg-(--app-bg) text-(--app-text) py-12 px-4 sm:px-6 lg:px-8 flex flex-col justify-center items-center transition-colors duration-200">
       <div className="max-w-2xl w-full space-y-8">
         {/* Animated Shield Header */}
         <div className="text-center space-y-4">
-          <div className="inline-flex relative">
+          <motion.div className="inline-flex relative" animate={{ scale: [1, 1.035, 1] }} transition={{ duration: 2, repeat: Infinity }}>
             <ShieldLogo size="xl" pulse className="animate-shield-glow" />
-          </div>
+          </motion.div>
 
           <div className="space-y-1">
-            <span className="text-xs font-mono font-semibold uppercase tracking-wider text-cyan-400">
+            <span className="text-xs font-mono font-semibold uppercase tracking-wider text-(--app-primary)">
               {t('localRules')}
             </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-(--app-text)">
               {t('analysisTitle')}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+            <p className="text-xs sm:text-sm text-(--app-text-muted) max-w-md mx-auto">
               {t('localRules')}. {t('aiUnavailable')}
             </p>
           </div>
         </div>
 
         {/* Central Progress Card */}
-        <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl backdrop-blur-md space-y-6">
+        <div className="p-6 rounded-2xl bg-(--app-surface) border border-(--app-border) shadow-xl space-y-6">
           {/* Progress Bar & Percentage */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-slate-300 font-semibold flex items-center gap-1.5">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+              <span className="text-(--app-text) font-semibold flex items-center gap-1.5">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-(--app-primary)" />
                 {t(STAGES[currentStageIndex]?.title ?? 'stagePrepare')}...
               </span>
-              <span className="text-cyan-400 font-bold tabular-nums">
+              <span className="text-(--app-primary) font-bold tabular-nums">
                 {Math.round(progress)}%
               </span>
             </div>
 
-            <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-              <div className="h-full rounded-full bg-cyan-400 transition-[width] duration-100 ease-out" style={{ width: `${progress}%` }} />
+            <div className="w-full h-2 rounded-full bg-(--app-surface-secondary) overflow-hidden">
+              <motion.div 
+                className="h-full bg-(--app-primary) rounded-full transition-all duration-100 ease-out"
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.1, ease: 'linear' }}
+              />
             </div>
           </div>
 
-          {/* Sequential Stage Indicators (Strict order from instructions) */}
+          {/* Sequential Stage Indicators */}
           <div className="space-y-3 pt-2">
-            <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">
+            <span className="text-[11px] font-mono text-(--app-text-muted) uppercase tracking-wider block">
               {t('analysisTitle')}:
             </span>
 
@@ -179,17 +201,17 @@ export const Analysis: React.FC = () => {
                     key={stage.id}
                     className={`flex items-center justify-between p-3 rounded-xl border text-xs transition-all duration-300 ${
                       isPassed
-                        ? 'bg-slate-950/70 border-emerald-500/30 text-slate-200'
+                        ? 'bg-(--app-surface-secondary)/80 border-(--app-primary)/30 text-(--app-text)'
                         : isCurrent
-                        ? 'bg-cyan-950/40 border-cyan-500/50 text-cyan-200 shadow-sm'
-                        : 'bg-slate-950/30 border-slate-800/60 text-slate-400 opacity-60'
+                        ? 'bg-(--app-surface) border-(--app-primary) text-(--app-primary) shadow-sm'
+                        : 'bg-(--app-surface)/40 border-(--app-border)/60 text-(--app-text-muted) opacity-60'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`p-1.5 rounded-lg shrink-0 ${
-                        isPassed ? 'text-emerald-400 bg-emerald-950/50' :
-                        isCurrent ? 'text-cyan-400 bg-cyan-950/60' :
-                        'text-slate-500 bg-slate-900'
+                        isPassed ? 'text-(--app-primary) bg-(--app-surface-secondary)' :
+                        isCurrent ? 'text-(--app-primary) bg-(--app-surface-secondary)' :
+                        'text-(--app-text-muted) bg-(--app-surface-secondary)'
                       }`}>
                         <Icon className="w-4 h-4" />
                       </div>
@@ -200,17 +222,17 @@ export const Analysis: React.FC = () => {
 
                     <div className="shrink-0 font-mono text-[11px]">
                       {isPassed ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold">
+                        <span className="inline-flex items-center gap-1 text-(--app-primary) font-semibold">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span className="sr-only">{t('result')}</span>
                         </span>
                       ) : isCurrent ? (
-                        <span className="inline-flex items-center gap-1 text-cyan-400 font-semibold">
+                        <span className="inline-flex items-center gap-1 text-(--app-primary) font-semibold">
                           <Loader2 className="w-3 h-3 animate-spin" />
                           <span>{t('processing')}</span>
                         </span>
                       ) : (
-                        <span className="text-slate-400" aria-label={t('startScan')}>•••</span>
+                        <span className="text-(--app-text-muted)" aria-label={t('startScan')}>•••</span>
                       )}
                     </div>
                   </div>
@@ -220,19 +242,19 @@ export const Analysis: React.FC = () => {
           </div>
 
           {/* Capability notice */}
-          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400 leading-relaxed font-mono">
-            <AlertCircle className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-(--app-surface-secondary) border border-(--app-border) text-[11px] text-(--app-text-muted) leading-relaxed font-mono">
+            <AlertCircle className="w-4 h-4 text-(--app-primary) shrink-0 mt-0.5" />
             <div>
-              <span className="text-slate-200 font-semibold">{t('riskNote')} </span>
+              <span className="text-(--app-text) font-semibold">{t('riskNote')} </span>
               {t('localRules')}. {t('aiUnavailable')} {t('ocrUnavailable')}
             </div>
           </div>
 
-          {/* Continue to the completed local check */}
+          {/* Continue to the completed check */}
           <div className="flex justify-end pt-2">
             <button
               onClick={handleSkip}
-              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-cyan-300 font-mono transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-xs text-(--app-text-muted) hover:text-(--app-primary) font-mono transition-colors cursor-pointer"
             >
               <FastForward className="w-3.5 h-3.5" />
               <span>{t('result')} &rarr;</span>

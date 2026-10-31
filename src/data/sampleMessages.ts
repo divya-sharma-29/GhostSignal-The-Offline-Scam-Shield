@@ -2,57 +2,57 @@ import { SampleMessage } from '../types';
 
 export const SAMPLE_MESSAGES: SampleMessage[] = [
   {
+    id: 'sample-unicode-homoglyph',
+    name: 'Sample 1: Unicode Homoglyph Attack (Mixed Cyrillic)',
+    category: 'Unicode Spoofing',
+    riskLevel: 'HIGH',
+    language: 'English',
+    text: 'Urgent Alert: Your sbi․com netbanking is blocked. Update kyc on рауtm app immediately to keep account active or OTP will expire.',
+    description: 'Employs Cyrillic homoglyphs in "рауtm" and one-dot leader separator in "sbi․com" to evade keyword and domain filters.'
+  },
+  {
     id: 'sample-bank-impersonation',
-    name: 'Sample 1: Bank Impersonation',
+    name: 'Sample 2: Bank Impersonation & OTP Harvest',
     category: 'Bank Fraud',
     riskLevel: 'HIGH',
     language: 'English',
     text: 'Dear Customer, your bank account will be blocked within 2 hours. Verify your account immediately using the link below and share your OTP to avoid suspension.',
-    description: 'Classic high-threat phishing attempt inducing panic with artificial time limits to extract one-time passwords.'
+    description: 'Classic phishing attempt inducing panic with artificial deadlines to extract one-time passwords.'
   },
   {
     id: 'sample-upi-manipulation',
-    name: 'Sample 2: UPI Payment Manipulation',
+    name: 'Sample 3: UPI Reverse Collect Trick',
     category: 'UPI Scam',
     riskLevel: 'MEDIUM',
     language: 'English',
-    text: 'You have received ₹5,000. Enter your UPI PIN to claim the payment.',
-    description: 'Reverse payment trick designed to siphon funds by confusing receiving money with authorizing an outgoing transfer.'
+    text: 'You have received ₹5,000 cash prize! Enter your secret UPI PIN to claim and credit the payment to your account.',
+    description: 'Reverse payment trick designed to siphon funds by confusing receiving money with authorizing an outgoing payment.'
   },
   {
-    id: 'sample-normal-message',
-    name: 'Sample 3: Normal Appointment',
+    id: 'sample-indic-hindi-clean',
+    name: 'Sample 4: Legitimate Indic Text (Hindi Conjuncts)',
     category: 'Legitimate SMS',
     riskLevel: 'LOW',
-    language: 'English',
-    text: 'Your appointment is confirmed for tomorrow at 10 AM. Thank you.',
-    description: 'Standard transactional notification without coercive demands, urgent deadlines, or credential extraction.'
+    language: 'Hindi (हिन्दी)',
+    text: 'नमस्ते। आपकी डॉक्टर नियुक्ति कल सुबह 10:00 बजे निश्चित है। सम्पर्क करने के लिए धन्यवाद।',
+    description: 'Authentic Hindi transactional text featuring standard Devanagari conjuncts and halant ligatures, verifying Indic script preservation.'
   },
   {
     id: 'sample-hindi-electricity',
-    name: 'Sample 4: Electricity Bill Suspension (Hindi)',
+    name: 'Sample 5: Electricity Bill Disconnection (Hindi)',
     category: 'Utility Scam',
     riskLevel: 'HIGH',
     language: 'Hindi (हिन्दी)',
     text: 'प्रिय ग्राहक, आपका बिजली कनेक्शन आज रात 9:30 बजे काट दिया जाएगा क्योंकि आपका बिल बकाया है। तुरंत इस लिंक पर क्लिक करें और अपडेट करें।',
-    description: 'Hindi utility fraud exploiting fear of power cut to compel victims to click malicious payment links.'
+    description: 'Hindi utility fraud exploiting fear of power cut to compel victims to click malicious links.'
   },
   {
-    id: 'sample-tamil-lottery',
-    name: 'Sample 5: Lottery Prize Trick (Tamil)',
-    category: 'Lottery Scam',
-    riskLevel: 'HIGH',
-    language: 'Tamil (தமிழ்)',
-    text: 'வாழ்த்துக்கள்! நீங்கள் ₹25,00,000 ரொக்கப் பரிசை வென்றுள்ளீர்கள். பரிசைப் பெற உடனே உங்கள் வங்கிக் கணக்கு மற்றும் OTP ஐப் பகிரவும்.',
-    description: 'Tamil prize lure attempting credential harvesting by dangling an unearned cash jackpot.'
+    id: 'sample-normal-appointment',
+    name: 'Sample 6: Normal Appointment (Clean)',
+    category: 'Legitimate SMS',
+    riskLevel: 'LOW',
+    language: 'English',
+    text: 'Your appointment is confirmed for tomorrow at 10:00 AM. Thank you for booking with us.',
+    description: 'Standard transactional confirmation without urgency, OTP demands, or suspicious URLs.'
   }
-];
-
-export const SUPPORTED_LANGUAGES = [
-  { code: 'en', name: 'English', native: 'English' },
-  { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
-  { code: 'ta', name: 'Tamil', native: 'தமிழ்' },
-  { code: 'te', name: 'Telugu', native: 'తెలుగు' },
-  { code: 'bn', name: 'Bengali', native: 'বাংলা' },
-  { code: 'mr', name: 'Marathi', native: 'मराठी' }
 ];

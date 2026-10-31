@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useScanHistory } from '../hooks/useScanHistory';
 import { RiskBadge } from '../components/RiskBadge';
 import { RiskLevel, ScanResult } from '../types';
+import { OfflineStatusBanner } from '../components/OfflineStatusBanner';
 import { useLanguage } from '../i18n';
 import { 
   History as HistoryIcon, 
@@ -81,6 +82,9 @@ export const History: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Live offline simulator banner */}
+        <OfflineStatusBanner />
 
         {/* SECTION A: SCAN HISTORY TAB */}
         {activeTab === 'history' && (
