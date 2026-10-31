@@ -1,44 +1,66 @@
 # GhostSignal — The Offline Scam Shield
 
-GhostSignal helps people review suspicious messages, understand common warning signs, and find practical next steps. The application supports a local keyword-based check, multilingual navigation, voice-assisted input, scan history, and India-specific cybercrime support.
+GhostSignal is a local-first, zero-cloud cybersecurity scam shield engineered to analyze suspicious text, screenshots, and voice recordings entirely on-device without exposing sensitive personal or financial credentials to remote cloud APIs.
 
-## Run locally
+---
 
-Requires Node.js 20.19+ or 22.12+.
+## ⚡ Core Runtime Engine Architecture
 
+### 1. 📷 Live On-Device OCR (Windows Native WinRT)
+- **Engine**: Direct `Windows.Media.Ocr.OcrEngine` WinRT API integration (`winocr` / fallback `easyocr`).
+- **Execution**: Runs in backend runtime on screenshot image uploads (`PNG`, `JPG`, `WebP`).
+- **Privacy**: Screenshot images are processed 100% locally in memory without remote API exposure.
+- **Workflow**: Extracts text automatically and forwards it directly through the calibrated scam detector pipeline.
+
+### 2. 🎙️ Offline Whisper Voice Speech-to-Text (CPU int8)
+- **Engine**: `faster-whisper` (CTranslate2 int8 quantization on CPU) with `openai-whisper` fallback.
+- **Microphone Dictation**: Live browser `MediaRecorder` captures real microphone audio chunks and streams the audio blob to backend `POST /voice/transcribe`.
+- **Audio Files**: Supports uploading audio recordings (`.wav`, `.mp3`, `.ogg`, `.webm`, `.m4a`, `.flac`).
+- **Privacy**: Speech is transcribed strictly on local CPU; zero voice audio leaves the local device.
+
+### 3. 🔐 CSPRNG OTP Generator & Mobile SMS Delivery
+- **Generation**: Cryptographically Secure Pseudo-Random Number Generation (`secrets.randbelow`).
+- **Storage**: Salted SHA-256 hash stored in SQLite database with 5-minute expiration and 3-attempt brute force limits.
+- **Mobile SMS Delivery**: Dispatches 6-digit OTP codes directly to the user's mobile phone via SMS gateways (Twilio / Fast2SMS).
+- **Security**: Raw OTP codes are never logged or exposed client-side; verification is performed exclusively against the backend database hash.
+
+### 4. 🧠 SmolLM3-3B Local AI Threat Intelligence
+- **AI Model**: Quantized SmolLM3-3B local AI reasoner fine-tuned on cybersecurity scam patterns.
+- **Unicode Shield**: Normalizes Cyrillic/Greek homoglyphs, invisible zero-width characters, and dotted URL evasions while preserving Indic text.
+- **Risk Assessment**: Produces live calibrated threat scores (0–100), severity levels (LOW, MEDIUM, HIGH, CRITICAL), red flag categorization, and plain-language safety recommendations.
+
+---
+
+## 🚀 Running Locally
+
+### Prerequisites
+- **Node.js**: v20.19+ or v22.12+
+- **Python**: 3.10+ (Python 3.12 recommended)
+
+### 1. Start the Backend Server (FastAPI)
 ```bash
+# Install Python backend dependencies
+pip install -r backend/requirements.txt
+
+# Launch FastAPI backend on port 8000
+python backend/main.py
+```
+
+### 2. Start the Frontend Application (Vite + React)
+```bash
+# Install NPM packages
 npm install
+
+# Launch frontend dev server on port 3000
 npm run dev
 ```
 
-Open the URL printed by Vite (default: `http://localhost:3000`). No API key or backend is required.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Sign in
+---
 
-1. Enter a phone number and continue.
-2. Enter the local sign-in code shown on screen: **123456**.
-3. Sign-in, language, theme, and voice preferences are stored in this browser. Sign out from the navigation menu.
-
-No SMS is sent. The sign-in code is for local access only.
-
-## Language and voice
-
-The interface supports English, Hindi, Bengali, Marathi, Tamil, Telugu, Kannada, Malayalam, Gujarati, and Punjabi. Your selection is saved and updates the interface without a refresh.
-
-The voice assistant uses browser speech recognition for navigation commands and voice-message transcription, and browser speech synthesis for spoken advice. Availability and voice quality depend on the browser and device. Microphone permission is requested only when you start listening. Voice input is not sent to GhostSignal's message checker; do not speak private messages or financial credentials if your browser's speech service is not trusted.
-
-## Message checks
-
-Text is reviewed using local keyword rules for common signals such as urgency, suspicious links, OTP requests, UPI payment pressure, and impersonation. Results explain the rules that matched; they are not AI predictions, statistically validated probabilities, or proof that a message is safe.
-
-PNG and JPG screenshots can be previewed, but image text recognition is not available. Screenshot-only results are marked **Not assessed**. Paste or dictate the message text to check it.
-
-Scan history is stored in this browser's local storage and can be cleared from Scan History.
-
-## Cybercrime support
-
-For suspected financial cyber fraud in India, call **1930** and report through the [National Cyber Crime Reporting Portal](https://cybercrime.gov.in/). GhostSignal does not file complaints. No official SMS reporting contact is verified in the app; do not use 1930 as an SMS number. If money was lost, contact your bank or payment provider immediately. Never share your OTP, UPI PIN, or banking password.
-
-## Privacy and offline limits
-
-Message checks run in the browser and are not sent to a remote analysis service. The application has not undergone network-isolation verification and does not include offline asset caching. Initial loading and browser speech services may use network connections depending on the environment. These limits are shown in the app so offline design goals are not mistaken for a security certification.
+## 🇮🇳 Cybercrime Support & Helpline
+For suspected financial cyber fraud in India:
+- **Helpline**: Call **1930** immediately.
+- **Portal**: Report incidents via the [National Cyber Crime Reporting Portal (cybercrime.gov.in)](https://cybercrime.gov.in/).
+- **Guidance**: Contact your bank immediately to freeze compromised accounts or cards. Never share your OTP, UPI PIN, or net-banking password.
