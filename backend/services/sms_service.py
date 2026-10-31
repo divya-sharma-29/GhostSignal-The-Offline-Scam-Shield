@@ -33,22 +33,52 @@ class SMSService:
                 logger.warning(f"[SMSService] Could not initialize Twilio client: {e}")
                 self.twilio_client = None
 
+    def check_fast2sms_balance(self, api_key: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Validates Fast2SMS API key and retrieves account wallet balance.
+        """
+        key = (api_key or getattr(settings, "FAST2SMS_API_KEY", "")).strip()
+        if not key:
+            return {"valid": False, "error": "No Fast2SMS API key configured."}
+
+        try:
+            url = "https://www.fast2sms.com/dev/wallet"
+            headers = {"authorization": key}
+            res = requests.get(url, headers=headers, timeout=10)
+            data = res.json()
+            if data.get("return") is True:
+                wallet_val = float(data.get("wallet", 0.0))
+                return {
+                    "valid": True,
+                    "wallet": wallet_val,
+                    "message": f"Fast2SMS API active. Wallet balance: ₹{wallet_val:.2f}"
+                }
+            err = data.get("message", "Invalid authorization key.")
+            if isinstance(err, list):
+                err = ", ".join(err)
+            return {"valid": False, "error": str(err)}
+        except Exception as e:
+            return {"valid": False, "error": f"Failed to contact Fast2SMS: {str(e)}"}
+
     def get_provider_status(self) -> Dict[str, Any]:
         """Returns the active SMS delivery provider and configuration status."""
+        has_fast2sms = bool(getattr(settings, "FAST2SMS_API_KEY", "").strip())
         has_twilio = bool(getattr(settings, "TWILIO_ACCOUNT_SID", None) and getattr(settings, "TWILIO_AUTH_TOKEN", None))
-        has_fast2sms = bool(getattr(settings, "FAST2SMS_API_KEY", None))
         
-        if has_twilio:
-            provider = "twilio"
-        elif has_fast2sms:
+        wallet_info = None
+        if has_fast2sms:
             provider = "fast2sms"
+            wallet_info = self.check_fast2sms_balance()
+        elif has_twilio:
+            provider = "twilio"
         else:
             provider = "offline_simulated"
 
         return {
             "provider": provider,
-            "twilioConfigured": has_twilio,
             "fast2smsConfigured": has_fast2sms,
+            "fast2smsStatus": wallet_info,
+            "twilioConfigured": has_twilio,
             "smsEnabled": getattr(settings, "SMS_ENABLED", True)
         }
 
@@ -60,13 +90,59 @@ class SMSService:
     ) -> Dict[str, Any]:
         """
         Transmits 6-digit verification code directly to user's mobile number via SMS text message.
+        Prioritizes Fast2SMS for Indian phone numbers (+91).
         """
         digits = "".join(filter(str.isdigit, phone_number))
         full_phone = f"{country_code}{digits}"
         masked_phone = f"{country_code} ••••••{digits[-2:] if len(digits) >= 2 else '00'}"
         message_body = f"Your GhostSignal verification code is: {otp_code}. Valid for 5 minutes. Never share this code with anyone."
 
-        # 1. Attempt Twilio SMS
+        # 1. Primary Indian Cellular Gateway: Fast2SMS
+        fast2sms_key = getattr(settings, "FAST2SMS_API_KEY", "").strip()
+        if fast2sms_key and (country_code == "+91" or len(digits) == 10):
+            target_digits = digits[-10:]
+            url = "https://www.fast2sms.com/dev/bulkV2"
+            
+            # Method A: Fast2SMS route "otp" via JSON POST
+            try:
+                payload = {
+                    "variables_values": str(otp_code),
+                    "route": "otp",
+                    "numbers": target_digits
+                }
+                headers = {
+                    "authorization": fast2sms_key,
+                    "Content-Type": "application/json"
+                }
+                res = requests.post(url, json=payload, headers=headers, timeout=10)
+                res_data = res.json()
+                
+                # Method B: Fallback to GET URL if JSON POST was rejected
+                if not res_data.get("return"):
+                    logger.info("[SMS Gateway] Fast2SMS JSON endpoint returned non-success, trying Fast2SMS direct query...")
+                    get_url = f"https://www.fast2sms.com/dev/bulkV2?authorization={fast2sms_key}&route=otp&variables_values={otp_code}&flash=0&numbers={target_digits}"
+                    get_res = requests.get(get_url, timeout=10)
+                    res_data = get_res.json()
+
+                if res_data.get("return") is True:
+                    logger.info(f"[SMS Gateway] Fast2SMS dispatched OTP directly to cellular mobile {full_phone}: {res_data}")
+                    return {
+                        "success": True,
+                        "provider": "fast2sms",
+                        "status": "sent",
+                        "requestId": res_data.get("request_id"),
+                        "phone": masked_phone,
+                        "message": f"Verification code sent via Fast2SMS text message directly to {masked_phone}."
+                    }
+                else:
+                    err_msg = res_data.get("message")
+                    if isinstance(err_msg, list):
+                        err_msg = ", ".join(err_msg)
+                    logger.warning(f"[SMS Gateway] Fast2SMS delivery unsuccessful: {err_msg or res_data}")
+            except Exception as e:
+                logger.error(f"[SMS Gateway] Fast2SMS request exception: {e}")
+
+        # 2. Secondary Global Gateway: Twilio SMS
         account_sid = getattr(settings, "TWILIO_ACCOUNT_SID", None)
         auth_token = getattr(settings, "TWILIO_AUTH_TOKEN", None)
         from_number = getattr(settings, "TWILIO_PHONE_NUMBER", None)
@@ -92,37 +168,6 @@ class SMSService:
             except Exception as e:
                 logger.error(f"[SMS Gateway] Twilio SMS dispatch failed: {e}")
 
-        # 2. Attempt Fast2SMS (Indian Gateway)
-        fast2sms_key = getattr(settings, "FAST2SMS_API_KEY", None)
-        if fast2sms_key and (country_code == "+91" or len(digits) == 10):
-            try:
-                target_digits = digits[-10:]
-                url = "https://www.fast2sms.com/dev/bulkV2"
-                payload = {
-                    "variables_values": otp_code,
-                    "route": "otp",
-                    "numbers": target_digits
-                }
-                headers = {
-                    'authorization': fast2sms_key,
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }
-                res = requests.post(url, data=payload, headers=headers, timeout=5)
-                res_data = res.json()
-                if res_data.get("return"):
-                    logger.info(f"[SMS Gateway] Fast2SMS dispatched OTP to {full_phone}")
-                    return {
-                        "success": True,
-                        "provider": "fast2sms",
-                        "status": "sent",
-                        "phone": masked_phone,
-                        "message": f"Verification code sent via SMS text to {masked_phone}."
-                    }
-                else:
-                    logger.warning(f"[SMS Gateway] Fast2SMS returned error: {res_data}")
-            except Exception as e:
-                logger.error(f"[SMS Gateway] Fast2SMS dispatch failed: {e}")
-
         # 3. Offline / Simulated SMS Gateway
         logger.info(
             f"\n"
@@ -132,7 +177,7 @@ class SMSService:
             f"║ Recipient Mobile : {full_phone:<57} ║\n"
             f"║ Verification OTP : {otp_code:<57} ║\n"
             f"║ Message Content  : {message_body[:57]:<57} ║\n"
-            f"║ SMS Provider     : Local Offline SMS Gateway (Configure .env for Twilio)    ║\n"
+            f"║ SMS Provider     : Local Simulated SMS (Configure Fast2SMS API Key in .env)  ║\n"
             f"╚══════════════════════════════════════════════════════════════════════════════╝"
         )
 

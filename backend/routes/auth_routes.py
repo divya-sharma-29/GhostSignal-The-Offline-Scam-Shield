@@ -8,8 +8,12 @@ from schemas import (
     OTPVerifyRequest,
     OTPVerifyResponse
 )
+from pydantic import BaseModel
 from services.otp_service import otp_service
 from services.sms_service import sms_service
+
+class Fast2SMSConfigRequest(BaseModel):
+    apiKey: str
 
 router = APIRouter(prefix="/auth", tags=["Authentication & OTP"])
 
@@ -19,6 +23,54 @@ def get_sms_status():
     Returns active SMS delivery provider and configuration status.
     """
     return sms_service.get_provider_status()
+
+@router.post("/sms/fast2sms/configure")
+def configure_fast2sms(request: Fast2SMSConfigRequest):
+    """
+    Configures and tests Fast2SMS API key dynamically.
+    Validates key against Fast2SMS API and updates local environment.
+    """
+    clean_key = request.apiKey.strip()
+    if not clean_key:
+        raise HTTPException(status_code=400, detail="Fast2SMS API key cannot be empty.")
+
+    balance_res = sms_service.check_fast2sms_balance(clean_key)
+    if not balance_res.get("valid"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Fast2SMS API verification failed: {balance_res.get('error', 'Invalid Key')}"
+        )
+
+    # Save to settings in runtime
+    from config import settings, BASE_DIR
+    settings.FAST2SMS_API_KEY = clean_key
+
+    # Persist to .env files (root and backend)
+    env_paths = [BASE_DIR.parent / ".env", BASE_DIR / ".env"]
+    for env_path in env_paths:
+        lines = []
+        if env_path.exists():
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if not line.startswith("FAST2SMS_API_KEY="):
+                        lines.append(line.rstrip("\r\n"))
+        lines.append(f"FAST2SMS_API_KEY={clean_key}")
+        with open(env_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+
+    return {
+        "success": True,
+        "message": f"Fast2SMS connected successfully! Wallet balance: ₹{balance_res.get('wallet', 0.0):.2f}",
+        "wallet": balance_res.get("wallet", 0.0),
+        "provider": "fast2sms"
+    }
+
+@router.get("/sms/fast2sms/test")
+def test_fast2sms():
+    """
+    Tests currently configured Fast2SMS credentials and balance.
+    """
+    return sms_service.check_fast2sms_balance()
 
 @router.post("/otp/generate", response_model=OTPGenerateResponse)
 def generate_otp(request: OTPGenerateRequest, db: Session = Depends(get_db)):

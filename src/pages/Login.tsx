@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, ArrowRight, LockKeyhole, ShieldCheck, Smartphone, AlertCircle, KeyRound, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, LockKeyhole, ShieldCheck, Smartphone, AlertCircle, KeyRound, CheckCircle2, Zap, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { ShieldLogo } from '../components/ShieldLogo';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../i18n';
@@ -33,6 +33,45 @@ export const Login = () => {
   const maskedPhone = `${countryCode} ${'*'.repeat(Math.max(phoneNumber.length - 2, 0))}${phoneNumber.slice(-2)}`;
 
   const [smsDeliveryMessage, setSmsDeliveryMessage] = useState<string>('');
+  const [fast2smsConfigured, setFast2smsConfigured] = useState(false);
+  const [fast2smsWallet, setFast2smsWallet] = useState<number | null>(null);
+  const [showFast2smsPanel, setShowFast2smsPanel] = useState(false);
+  const [fast2smsInputKey, setFast2smsInputKey] = useState('');
+  const [isConfiguringFast2sms, setIsConfiguringFast2sms] = useState(false);
+  const [fast2smsConfigSuccess, setFast2smsConfigSuccess] = useState<string | null>(null);
+  const [fast2smsConfigError, setFast2smsConfigError] = useState<string | null>(null);
+
+  useEffect(() => {
+    apiService.getSmsStatus().then((status) => {
+      setFast2smsConfigured(status.fast2smsConfigured);
+      if (status.fast2smsStatus?.wallet !== undefined) {
+        setFast2smsWallet(status.fast2smsStatus.wallet);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const handleSaveFast2smsKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fast2smsInputKey.trim()) return;
+    setIsConfiguringFast2sms(true);
+    setFast2smsConfigError(null);
+    setFast2smsConfigSuccess(null);
+    try {
+      const res = await apiService.configureFast2SMS(fast2smsInputKey.trim());
+      if (res.success) {
+        setFast2smsConfigured(true);
+        if (res.wallet !== undefined) setFast2smsWallet(res.wallet);
+        setFast2smsConfigSuccess(res.message);
+        setFast2smsInputKey('');
+      } else {
+        setFast2smsConfigError(res.message);
+      }
+    } catch (err: any) {
+      setFast2smsConfigError(err?.message || 'Configuration failed');
+    } finally {
+      setIsConfiguringFast2sms(false);
+    }
+  };
 
   const requestOtp = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -183,6 +222,63 @@ export const Login = () => {
                 <span>{t('continue')}</span>
                 <ArrowRight className="h-4 w-4" />
               </button>
+
+              {/* Fast2SMS Indian Cellular Gateway Status & Quick Connector */}
+              <div className="rounded-xl border border-(--app-border) bg-(--app-surface-secondary) p-3 text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-semibold text-(--app-text)">
+                    <Zap className="h-3.5 w-3.5 text-amber-500" />
+                    <span>Fast2SMS Cellular Gateway (India)</span>
+                  </div>
+                  {fast2smsConfigured ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                      <CheckCircle2 className="h-3 w-3" />
+                      <span>Connected {fast2smsWallet !== null ? `(₹${fast2smsWallet.toFixed(2)})` : ''}</span>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowFast2smsPanel(!showFast2smsPanel)}
+                      className="text-[11px] font-bold text-(--app-primary) hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Connect API Key</span>
+                      {showFast2smsPanel ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    </button>
+                  )}
+                </div>
+
+                {showFast2smsPanel && !fast2smsConfigured && (
+                  <div className="pt-2 border-t border-(--app-border)/60 space-y-2">
+                    <p className="text-[11px] text-(--app-text-muted)">
+                      Paste your Fast2SMS API key below to send real SMS text messages directly to your phone:
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="password"
+                        value={fast2smsInputKey}
+                        onChange={(e) => setFast2smsInputKey(e.target.value)}
+                        placeholder="Paste Fast2SMS API Key..."
+                        className="flex-1 rounded-lg border border-(--app-border) bg-(--app-card) px-3 py-1.5 text-xs text-(--app-text) outline-none focus:ring-1 focus:ring-(--app-primary)"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveFast2smsKey}
+                        disabled={isConfiguringFast2sms || !fast2smsInputKey.trim()}
+                        className="rounded-lg bg-(--app-primary) text-(--app-on-primary) px-3 py-1.5 text-xs font-bold hover:opacity-90 disabled:opacity-50 cursor-pointer flex items-center gap-1"
+                      >
+                        {isConfiguringFast2sms && <Loader2 className="h-3 w-3 animate-spin" />}
+                        <span>Connect</span>
+                      </button>
+                    </div>
+                    {fast2smsConfigError && (
+                      <p className="text-[11px] text-(--app-danger)">{fast2smsConfigError}</p>
+                    )}
+                  </div>
+                )}
+                {fast2smsConfigSuccess && (
+                  <p className="text-[11px] text-emerald-400 font-medium">{fast2smsConfigSuccess}</p>
+                )}
+              </div>
 
               <div className="rounded-xl border border-(--app-border) bg-(--app-surface-secondary) p-3 text-[11px] text-(--app-text-muted) leading-relaxed">
                 <span className="font-semibold text-(--app-text)">Direct SMS Delivery: </span>

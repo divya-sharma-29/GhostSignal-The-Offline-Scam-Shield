@@ -73,3 +73,12 @@ def test_otp_verification_with_static_override(db):
     res = verify_otp(payload, db=db)
     assert res.success is True
     assert res.token is not None
+
+def test_fast2sms_invalid_key_rejected():
+    """Verify configure_fast2sms rejects empty or invalid keys."""
+    from routes.auth_routes import configure_fast2sms, Fast2SMSConfigRequest
+    from fastapi import HTTPException
+    
+    with pytest.raises(HTTPException) as exc_info:
+        configure_fast2sms(Fast2SMSConfigRequest(apiKey="invalid_test_key_xyz"))
+    assert exc_info.value.status_code == 400

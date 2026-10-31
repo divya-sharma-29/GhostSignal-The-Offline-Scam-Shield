@@ -5,7 +5,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 BASE_DIR = Path(__file__).resolve().parent
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(extra="allow", env_file=".env")
+    model_config = SettingsConfigDict(
+        extra="allow",
+        env_file=[str(BASE_DIR.parent / ".env"), str(BASE_DIR / ".env")],
+        env_file_encoding="utf-8"
+    )
 
     APP_NAME: str = "GhostSignal – The Offline Scam Shield"
     VERSION: str = "2.4.0"

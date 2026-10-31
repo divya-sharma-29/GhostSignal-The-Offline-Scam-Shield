@@ -342,7 +342,13 @@ export const apiService = {
   /**
    * Retrieves active SMS gateway status.
    */
-  async getSmsStatus(): Promise<{ provider: string; twilioConfigured: boolean; fast2smsConfigured: boolean; smsEnabled: boolean }> {
+  async getSmsStatus(): Promise<{
+    provider: string;
+    twilioConfigured: boolean;
+    fast2smsConfigured: boolean;
+    smsEnabled: boolean;
+    fast2smsStatus?: { valid: boolean; wallet?: number; message?: string; error?: string };
+  }> {
     try {
       const res = await fetchWithTimeout(`${API_BASE_URL}/auth/sms/status`, { method: 'GET' });
       if (res.ok) {
@@ -362,6 +368,36 @@ export const apiService = {
   /**
    * Verifies submitted OTP code.
    */
+  /**
+   * Configures Fast2SMS API Key and validates wallet balance against Fast2SMS.
+   */
+  async configureFast2SMS(apiKey: string): Promise<{ success: boolean; message: string; wallet?: number }> {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/auth/sms/fast2sms/configure`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey })
+      }, 12000);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        return {
+          success: true,
+          message: data.message || 'Fast2SMS connected successfully.',
+          wallet: data.wallet
+        };
+      }
+      return {
+        success: false,
+        message: data.detail || data.message || 'Failed to validate Fast2SMS API key.'
+      };
+    } catch {
+      return {
+        success: false,
+        message: 'Could not connect to backend server to validate Fast2SMS API key.'
+      };
+    }
+  },
+
   async verifyOtp(phoneNumber: string, countryCode = '+91', otp: string): Promise<{ success: boolean; message: string; token?: string }> {
     try {
       const res = await fetchWithTimeout(`${API_BASE_URL}/auth/otp/verify`, {
