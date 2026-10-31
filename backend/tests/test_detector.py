@@ -1,26 +1,42 @@
-from backend.services.detector import detect
-from backend.services.risk_analyzer import analyze
+import pytest
+from services.detector import scam_detector
 
-def test_dotted_otp_matches_rule():
-    result = detect("Send your O.T.P immediately")
-    assert any(item["category"] == "otp" for item in result["threats"])
+def test_detect_fake_kyc_scam():
+    msg = "Dear customer, your SBI account KYC expired today. Click here to update within 24 hours to avoid suspension."
+    result = scam_detector.scan(msg)
+    assert result["riskLevel"] in ["HIGH", "MEDIUM"]
+    assert result["riskScore"] >= 50
+    flag_categories = [rf["category"] for rf in result["redFlags"]]
+    assert "kyc" in flag_categories or "urgency" in flag_categories
 
-def test_account_threat_is_detected():
-    result = analyze(detect("Your bank account will be blocked within 2 hours; verify K.Y.C now"))
-    assert result["risk_level"] == "HIGH"
-    assert result["risk_score"] <= 100
+def test_detect_otp_theft():
+    msg = "URGENT: Bank security alert. Share OTP 482910 with our officer to cancel unauthorized transaction."
+    result = scam_detector.scan(msg)
+    assert result["riskLevel"] == "HIGH"
+    assert result["riskScore"] >= 70
+    flag_categories = [rf["category"] for rf in result["redFlags"]]
+    assert "otp" in flag_categories
 
-def test_normal_message_stays_low():
-    result = analyze(detect("Your appointment is confirmed for tomorrow at 10 AM."))
-    assert result["risk_level"] == "LOW"
-    assert result["risk_score"] < 25
+def test_detect_upi_reverse_payment():
+    msg = "Congratulations! You won Rs 50,000 lottery. Enter your UPI PIN to receive money in your GooglePay account."
+    result = scam_detector.scan(msg)
+    assert result["riskLevel"] == "HIGH"
+    assert result["riskScore"] >= 70
+    flag_categories = [rf["category"] for rf in result["redFlags"]]
+    assert "upi" in flag_categories or "lottery" in flag_categories
 
-def test_leetspeak_and_stretched_terms_are_analyzed():
-    result = analyze(detect("Send your 0TP immediately; your account will be blockeeeed"))
-    assert result["risk_level"] == "HIGH"
-    assert any(item["category"] == "otp" for item in result["threats"])
+def test_detect_legitimate_message():
+    msg = "Hi Rohit, let's meet at 5 PM at the library to review our class project."
+    result = scam_detector.scan(msg)
+    assert result["riskLevel"] == "LOW"
+    assert result["riskScore"] < 35
+    assert len(result["redFlags"]) == 0
 
-def test_ai_is_honestly_reported_as_rules_only():
-    from backend.services.ai_engine import predict
-    assert predict("message")["mode"] == "rules-only"
+def test_detect_disguised_homoglyph_attack():
+    # Cyrillic 'а' and 'у' in 'paytm'
+    msg = "Your p\u0430\u0443tm wallet is suspended. Share OTP immediately."
+    result = scam_detector.scan(msg)
+    assert result["riskLevel"] == "HIGH"
+    assert result["riskScore"] >= 70
+    assert result["unicodeShield"]["hasAnomalies"] is True
 

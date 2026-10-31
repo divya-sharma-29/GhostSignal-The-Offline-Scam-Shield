@@ -1,15 +1,34 @@
-from backend.services.url_analyzer import analyze_url
+import pytest
+from services.url_analyzer import url_analyzer
 
-def test_url_is_not_opened_and_shortener_is_explained():
-    result = analyze_url("https://bit.ly/abc123")
-    assert result["risk_level"] == "MEDIUM"
-    assert any("shortening" in reason for reason in result["reasons"])
+def test_ip_address_url():
+    url = "http://192.168.1.100/sbi-login.html"
+    res = url_analyzer.analyze(url)
+    assert res["isSuspicious"] is True
+    assert "IP-Address Host" in res["characteristics"]
+    assert res["riskScore"] >= 45
 
-def test_plain_https_url_is_not_automatically_high_risk():
-    result = analyze_url("https://example.com/path")
-    assert result["risk_level"] == "LOW"
+def test_url_shortener():
+    url = "https://bit.ly/sbi-verify-kyc"
+    res = url_analyzer.analyze(url)
+    assert res["isSuspicious"] is True
+    assert "URL Shortener" in res["characteristics"]
 
-def test_ip_host_is_reported():
-    result = analyze_url("http://192.0.2.1/login")
-    assert any("IP address" in reason for reason in result["reasons"])
+def test_punycode_domain():
+    url = "https://xn--e1afmkfd.xn--p1ai/bank"
+    res = url_analyzer.analyze(url)
+    assert res["isSuspicious"] is True
+    assert "Punycode / IDN Homograph" in res["characteristics"]
+
+def test_brand_typosquatting_on_risky_tld():
+    url = "http://paytm-security-update.xyz/verify"
+    res = url_analyzer.analyze(url)
+    assert res["isSuspicious"] is True
+    assert res["riskLevel"] in ["HIGH", "MEDIUM"]
+
+def test_legitimate_government_url():
+    url = "https://cybercrime.gov.in/Webform/Crime_AuthoLogin.aspx"
+    res = url_analyzer.analyze(url)
+    assert res["riskLevel"] == "LOW"
+    assert res["riskScore"] < 35
 
