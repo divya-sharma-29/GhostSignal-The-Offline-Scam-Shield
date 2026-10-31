@@ -41,10 +41,22 @@ class Settings(BaseSettings):
     MAX_IMAGE_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB
     ALLOWED_IMAGE_TYPES: List[str] = ["image/jpeg", "image/png", "image/jpg"]
     
-    # OTP Authentication
+    # OTP Authentication & SMS Gateway
     OTP_LENGTH: int = 6
     OTP_EXPIRY_SECONDS: int = 300  # 5 minutes
     OTP_MAX_ATTEMPTS: int = 3
     DEVELOPMENT_STATIC_OTP: str = "123456"
+    SMS_ENABLED: bool = True
+    SHOW_DEV_OTP_IN_RESPONSE: bool = False
+    
+    # SMS Gateway Credentials (optional for live SMS text delivery)
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_PHONE_NUMBER: str = ""
+    FAST2SMS_API_KEY: str = ""
+
+    # Whisper Voice Transcription
+    WHISPER_MODEL_SIZE: str = "tiny"
+    WHISPER_DEVICE: str = "cpu"
 
 settings = Settings()

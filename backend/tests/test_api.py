@@ -83,19 +83,24 @@ def test_updates_endpoints():
     assert "currentVersion" in chk
 
 def test_otp_generation_and_verification(db):
-    # Generate OTP
+    # Test secure SMS mode: OTP code is sent via SMS and not exposed in response
+    from config import settings
+    settings.SHOW_DEV_OTP_IN_RESPONSE = False
     gen_req = OTPGenerateRequest(phoneNumber="9876543210", countryCode="+91")
     gen_res = generate_otp(gen_req, db=db)
     assert gen_res["success"] is True
-    dev_code = gen_res["devCode"]
-    assert dev_code is not None
+    assert gen_res["deliveryMethod"] == "sms"
+    assert gen_res["devCode"] is None
 
-    # Verify with generated code
-    ver_req = OTPVerifyRequest(phoneNumber="9876543210", countryCode="+91", otp=dev_code)
-    ver_res = verify_otp(ver_req, db=db)
-    assert ver_res.success is True
-
-    # Verify development static code '123456' also works
+    # Verify development static code '123456' works
     dev_ver_req = OTPVerifyRequest(phoneNumber="9876543210", countryCode="+91", otp="123456")
     dev_ver_res = verify_otp(dev_ver_req, db=db)
     assert dev_ver_res.success is True
+
+    # Test developer debug mode: devCode is included when explicitly enabled
+    settings.SHOW_DEV_OTP_IN_RESPONSE = True
+    gen_res_debug = generate_otp(gen_req, db=db)
+    assert gen_res_debug["devCode"] is not None
+    ver_req = OTPVerifyRequest(phoneNumber="9876543210", countryCode="+91", otp=gen_res_debug["devCode"])
+    ver_res = verify_otp(ver_req, db=db)
+    assert ver_res.success is True

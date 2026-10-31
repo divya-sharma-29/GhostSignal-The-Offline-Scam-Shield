@@ -23,7 +23,8 @@ import {
   Cpu,
   CheckCircle2,
   RefreshCw,
-  Volume2
+  Volume2,
+  Upload
 } from 'lucide-react';
 
 export const Scanner: React.FC = () => {
@@ -48,6 +49,12 @@ export const Scanner: React.FC = () => {
   const [ocrEngineUsed, setOcrEngineUsed] = useState<string | null>(null);
   const [ocrError, setOcrError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Whisper STT states
+  const [isTranscribingVoice, setIsTranscribingVoice] = useState(false);
+  const [whisperEngineUsed, setWhisperEngineUsed] = useState<string | null>(null);
+  const [whisperError, setWhisperError] = useState<string | null>(null);
 
   // Validation & loading states
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -166,6 +173,28 @@ export const Scanner: React.FC = () => {
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleImageFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleAudioFileUpload = async (file: File) => {
+    if (!file) return;
+    setIsTranscribingVoice(true);
+    setWhisperError(null);
+    setScanStep('Transcribing audio with on-device Whisper STT...');
+    try {
+      const res = await apiService.transcribeVoice(file, file.name, language);
+      if (res.success && res.text) {
+        setMessageText(res.text);
+        setWhisperEngineUsed(res.engine || 'Whisper On-Device');
+        setValidationError(null);
+      } else {
+        setWhisperError(res.text ? null : 'Could not extract clear speech from the audio file.');
+      }
+    } catch (err: any) {
+      setWhisperError(err?.message || 'Whisper transcription failed.');
+    } finally {
+      setIsTranscribingVoice(false);
+      setScanStep('');
     }
   };
 
@@ -430,23 +459,65 @@ export const Scanner: React.FC = () => {
         {inputMode === 'voice' && (
           <div className="rounded-2xl border border-(--app-border) bg-(--app-card) p-6 sm:p-8 text-center space-y-6 shadow-sm">
             <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold text-emerald-400">
+                <Cpu className="w-3.5 h-3.5" />
+                <span>Whisper On-Device STT · 100% Offline AI</span>
+              </div>
               <h3 className="text-base sm:text-lg font-bold text-(--app-text)">
-                Voice Message Dictation
+                Voice Message & Call Transcription
               </h3>
               <p className="text-xs text-(--app-text-muted) max-w-md mx-auto">
-                Speak or play a suspicious audio message. GhostSignal transcribes it locally using on-device speech recognition without sending audio to third parties.
+                Speak into the microphone or upload an audio file (voice note, call recording). GhostSignal transcribes it locally using on-device Whisper AI without sending audio over the network.
               </p>
             </div>
 
+            {/* Input Options: Direct Mic vs Audio File Upload */}
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={handleToggleVoice}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition shadow-xs cursor-pointer ${
+                  isListening
+                    ? 'bg-(--app-danger) text-white animate-pulse'
+                    : 'bg-(--app-primary) text-(--app-on-primary) hover:opacity-90'
+                }`}
+              >
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                <span>{isListening ? 'Stop Mic Dictation' : 'Start Live Dictation'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => audioFileInputRef.current?.click()}
+                disabled={isTranscribingVoice}
+                className="inline-flex items-center gap-2 rounded-xl border border-(--app-border) bg-(--app-surface-secondary) hover:border-(--app-primary) px-4 py-2.5 text-xs font-bold text-(--app-text) transition shadow-xs cursor-pointer"
+              >
+                {isTranscribingVoice ? <Loader2 className="w-4 h-4 animate-spin text-(--app-primary)" /> : <Upload className="w-4 h-4 text-(--app-primary)" />}
+                <span>{isTranscribingVoice ? 'Transcribing...' : 'Upload Voice Recording (Whisper)'}</span>
+              </button>
+
+              <input
+                ref={audioFileInputRef}
+                type="file"
+                accept="audio/*,.wav,.mp3,.ogg,.m4a,.webm,.flac"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    handleAudioFileUpload(e.target.files[0]);
+                  }
+                }}
+              />
+            </div>
+
             {/* Big Interactive Mic Button */}
-            <div className="flex flex-col items-center justify-center py-4">
+            <div className="flex flex-col items-center justify-center py-2">
               <button
                 type="button"
                 onClick={handleToggleVoice}
                 className={`relative flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-full transition shadow-lg cursor-pointer ${
                   isListening
                     ? 'bg-(--app-danger) text-white scale-105 shadow-(--app-danger)/30 animate-pulse'
-                    : 'bg-(--app-primary) text-(--app-on-primary) hover:scale-105 shadow-(--app-primary)/30'
+                    : 'bg-(--app-surface-secondary) border-2 border-(--app-primary) text-(--app-primary) hover:scale-105 shadow-(--app-primary)/10'
                 }`}
               >
                 {isListening ? (
@@ -455,16 +526,16 @@ export const Scanner: React.FC = () => {
                     <MicOff className="h-10 w-10 sm:h-12 sm:w-12 text-white" />
                   </>
                 ) : (
-                  <Mic className="h-10 w-10 sm:h-12 sm:w-12 text-white" />
+                  <Mic className="h-10 w-10 sm:h-12 sm:w-12 text-(--app-primary)" />
                 )}
               </button>
 
               <div className="mt-4 space-y-1">
                 <span className={`text-sm font-bold block ${isListening ? 'text-(--app-danger) animate-pulse' : 'text-(--app-text)'}`}>
-                  {isListening ? 'Listening... Speak your message now' : 'Tap to Start Speaking'}
+                  {isListening ? 'Listening... Speak your message now' : 'Click Mic to Speak or Upload Audio File'}
                 </span>
                 <span className="text-xs text-(--app-text-muted) block">
-                  Language: <strong>{currentLangObj?.name || 'English'} ({currentLangObj?.native || 'Default'})</strong>
+                  Target Language: <strong>{currentLangObj?.name || 'English'} ({currentLangObj?.native || 'Default'})</strong>
                 </span>
               </div>
             </div>
@@ -486,6 +557,31 @@ export const Scanner: React.FC = () => {
               </div>
             )}
 
+            {/* Transcription Status Alerts */}
+            {isTranscribingVoice && (
+              <div className="rounded-xl border border-(--app-primary)/30 bg-(--app-primary)/10 p-3 text-xs text-(--app-text) flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-(--app-primary)" />
+                <span>On-device Whisper AI is transcribing audio locally...</span>
+              </div>
+            )}
+
+            {whisperEngineUsed && (
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-xs text-emerald-400 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Speech Transcribed with <strong>{whisperEngineUsed}</strong></span>
+                </span>
+                <span className="text-[10px] font-mono uppercase bg-emerald-500/20 px-2 py-0.5 rounded">Offline</span>
+              </div>
+            )}
+
+            {whisperError && (
+              <div className="rounded-xl border border-(--app-danger)/30 bg-(--app-danger)/10 p-2.5 text-xs text-(--app-danger) flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{whisperError}</span>
+              </div>
+            )}
+
             {speechStatus && (
               <p className="text-xs font-medium text-(--app-primary)">
                 {speechStatus}
@@ -494,15 +590,22 @@ export const Scanner: React.FC = () => {
 
             {/* Transcribed text box */}
             <div className="space-y-2 text-left">
-              <label htmlFor="voice-message-text" className="block text-xs font-bold uppercase tracking-wider text-(--app-text-muted)">
-                Transcribed Message Text
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="voice-message-text" className="block text-xs font-bold uppercase tracking-wider text-(--app-text-muted)">
+                  Transcribed Message Text
+                </label>
+                {messageText && (
+                  <span className="text-[11px] font-mono text-(--app-primary)">
+                    {messageText.split(/\s+/).filter(Boolean).length} words
+                  </span>
+                )}
+              </div>
               <textarea
                 id="voice-message-text"
                 rows={4}
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
-                placeholder={isListening ? 'Listening... (Speak words like OTP, KYC, UPI, bank, urgency)' : 'Your spoken words will appear here...'}
+                placeholder={isListening ? 'Listening... (Speak words like OTP, KYC, UPI, bank, urgency)' : 'Your spoken words or audio transcript will appear here...'}
                 className="w-full rounded-xl border border-(--app-border) bg-(--app-surface-secondary) p-3.5 text-xs font-mono text-(--app-text) placeholder:text-(--app-text-muted)/60 focus:outline-none focus:ring-2 focus:ring-(--app-primary)"
               />
             </div>

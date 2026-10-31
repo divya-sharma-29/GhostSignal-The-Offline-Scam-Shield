@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from config import settings
 from models import OTPRecordModel
+from services.sms_service import sms_service
 
 class OTPService:
     """
@@ -66,11 +67,23 @@ class OTPService:
 
         db.commit()
 
+        # Send OTP directly to user's mobile number via SMS
+        sms_result = sms_service.send_otp_sms(
+            phone_number=digits,
+            country_code=country_code,
+            otp_code=raw_otp
+        )
+
+        show_dev = getattr(settings, "SHOW_DEV_OTP_IN_RESPONSE", False)
+        masked_phone = f"{country_code} ••••••{digits[-2:] if len(digits) >= 2 else '00'}"
+
         return {
             "success": True,
-            "message": f"Verification code generated for {country_code} ••••••{digits[-2:] if len(digits) >= 2 else '00'}.",
+            "message": f"Verification code sent via text SMS directly to {masked_phone}.",
             "expiresInSeconds": settings.OTP_EXPIRY_SECONDS,
-            "devCode": raw_otp  # Accessible for local development / testing
+            "deliveryMethod": "sms",
+            "smsStatus": sms_result.get("status", "sent"),
+            "devCode": raw_otp if show_dev else None
         }
 
     def verify_otp(

@@ -174,7 +174,9 @@ class OTPGenerateResponse(BaseModel):
     success: bool
     message: str
     expiresInSeconds: int
-    devCode: Optional[str] = None  # Provided in dev/testing mode
+    deliveryMethod: Optional[str] = "sms"
+    smsStatus: Optional[str] = "sent"
+    devCode: Optional[str] = None  # None when live SMS dispatch is active
 
 class OTPVerifyRequest(BaseModel):
     phoneNumber: str = Field(..., validation_alias=AliasChoices('phoneNumber', 'phone_number'), min_length=7, max_length=16)

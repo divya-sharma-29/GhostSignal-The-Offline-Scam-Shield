@@ -23,5 +23,6 @@ ENV/
 
 # Large Model Weights (stored offline or on HuggingFace Hub)
 backend/models/*.gguf
+backend/models/**/*.bin
 ghostsignal_smollm3_outputs/
 

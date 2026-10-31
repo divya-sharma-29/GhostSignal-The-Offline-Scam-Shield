@@ -97,26 +97,20 @@ class OCREngine:
         # 1. Primary Engine: Windows Native OCR (winocr)
         try:
             import winocr
+            pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
             try:
-                loop = asyncio.get_running_loop()
-            except RuntimeError:
-                loop = None
-
-            if loop is not None and loop.is_running():
-                # Avoid "asyncio.run() cannot be called from a running event loop" by executing in thread pool
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                    ocr_res = pool.submit(winocr.recognize_pil_sync, image).result(timeout=10)
-            else:
-                ocr_res = winocr.recognize_pil_sync(image)
-
-            text = ocr_res.get("text", "").strip() if isinstance(ocr_res, dict) else str(ocr_res).strip()
-            if text:
-                return {
-                    "success": True,
-                    "text": text,
-                    "engine": "winocr_windows_native",
-                    "ocr_available": True
-                }
+                future = pool.submit(winocr.recognize_pil_sync, image)
+                ocr_res = future.result(timeout=3)
+                text = ocr_res.get("text", "").strip() if isinstance(ocr_res, dict) else str(ocr_res).strip()
+                if text:
+                    return {
+                        "success": True,
+                        "text": text,
+                        "engine": "winocr_windows_native",
+                        "ocr_available": True
+                    }
+            finally:
+                pool.shutdown(wait=False, cancel_futures=True)
         except Exception as e:
             logger.info(f"winocr unavailable or failed ({e}), attempting fallback OCR engines...")
 

@@ -9,8 +9,16 @@ from schemas import (
     OTPVerifyResponse
 )
 from services.otp_service import otp_service
+from services.sms_service import sms_service
 
 router = APIRouter(prefix="/auth", tags=["Authentication & OTP"])
+
+@router.get("/sms/status")
+def get_sms_status():
+    """
+    Returns active SMS delivery provider and configuration status.
+    """
+    return sms_service.get_provider_status()
 
 @router.post("/otp/generate", response_model=OTPGenerateResponse)
 def generate_otp(request: OTPGenerateRequest, db: Session = Depends(get_db)):

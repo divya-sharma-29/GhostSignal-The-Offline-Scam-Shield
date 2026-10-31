@@ -20,7 +20,8 @@ from routes import (
     history_router,
     update_router,
     auth_router,
-    model_router
+    model_router,
+    voice_router
 )
 
 logging.basicConfig(
@@ -67,6 +68,7 @@ app.include_router(history_router)
 app.include_router(update_router)
 app.include_router(auth_router)
 app.include_router(model_router)
+app.include_router(voice_router)
 
 # Safe Global Exception Handler
 @app.exception_handler(Exception)

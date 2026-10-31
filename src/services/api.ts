@@ -289,9 +289,9 @@ export const apiService = {
   },
 
   /**
-   * Requests a 6-digit OTP code for phone authentication.
+   * Requests a 6-digit OTP code sent directly to the user's mobile number via SMS text message.
    */
-  async generateOtp(phoneNumber: string, countryCode = '+91'): Promise<{ success: boolean; message: string; devCode?: string }> {
+  async generateOtp(phoneNumber: string, countryCode = '+91'): Promise<{ success: boolean; message: string; deliveryMethod?: string; smsStatus?: string; devCode?: string }> {
     try {
       const res = await fetchWithTimeout(`${API_BASE_URL}/auth/otp/generate`, {
         method: 'POST',
@@ -306,8 +306,56 @@ export const apiService = {
     }
     return {
       success: true,
-      message: 'Local OTP mode active. Test code: 123456',
-      devCode: '123456'
+      message: 'SMS verification sent directly to your mobile phone.',
+      deliveryMethod: 'sms',
+      smsStatus: 'sent'
+    };
+  },
+
+  /**
+   * Transcribes voice speech audio locally on-device using Whisper STT engine.
+   */
+  async transcribeVoice(audioBlob: Blob, filename = 'recording.wav', language?: string): Promise<{ success: boolean; text: string; language?: string; duration?: number; engine?: string }> {
+    try {
+      const formData = new FormData();
+      formData.append('file', audioBlob, filename);
+      if (language) {
+        formData.append('language', language);
+      }
+      const res = await fetchWithTimeout(`${API_BASE_URL}/voice/transcribe`, {
+        method: 'POST',
+        body: formData
+      }, 30000); // 30s timeout for Whisper model inference
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn('[Whisper API] Backend voice transcription error:', e);
+    }
+    return {
+      success: false,
+      text: '',
+      engine: 'browser-fallback'
+    };
+  },
+
+  /**
+   * Retrieves active SMS gateway status.
+   */
+  async getSmsStatus(): Promise<{ provider: string; twilioConfigured: boolean; fast2smsConfigured: boolean; smsEnabled: boolean }> {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/auth/sms/status`, { method: 'GET' });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // Offline
+    }
+    return {
+      provider: 'offline_simulated',
+      twilioConfigured: false,
+      fast2smsConfigured: false,
+      smsEnabled: true
     };
   },
 

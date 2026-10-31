@@ -6,6 +6,7 @@ from routes.history_routes import router as history_router
 from routes.update_routes import router as update_router
 from routes.auth_routes import router as auth_router
 from routes.model_routes import router as model_router
+from routes.voice_routes import router as voice_router
 
 __all__ = [
     "health_router",
@@ -16,5 +17,6 @@ __all__ = [
     "update_router",
     "auth_router",
     "model_router",
+    "voice_router",
 ]
 

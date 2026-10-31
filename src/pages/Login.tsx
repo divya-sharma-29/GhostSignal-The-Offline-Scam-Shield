@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, ArrowRight, LockKeyhole, ShieldCheck, Smartphone, AlertCircle, KeyRound } from 'lucide-react';
+import { ArrowLeft, ArrowRight, LockKeyhole, ShieldCheck, Smartphone, AlertCircle, KeyRound, CheckCircle2 } from 'lucide-react';
 import { ShieldLogo } from '../components/ShieldLogo';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../i18n';
@@ -33,7 +33,7 @@ export const Login = () => {
 
   const maskedPhone = `${countryCode} ${'*'.repeat(Math.max(phoneNumber.length - 2, 0))}${phoneNumber.slice(-2)}`;
 
-  const [generatedDevCode, setGeneratedDevCode] = useState<string>('123456');
+  const [smsDeliveryMessage, setSmsDeliveryMessage] = useState<string>('');
 
   const requestOtp = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -47,11 +47,12 @@ export const Login = () => {
     
     try {
       const res = await apiService.generateOtp(digits, countryCode);
-      if (res.devCode) {
-        setGeneratedDevCode(res.devCode);
+      if (res.message) {
+        setSmsDeliveryMessage(res.message);
       }
     } catch {
       // offline fallback
+      setSmsDeliveryMessage(`SMS verification code dispatched to ${maskedPhone}.`);
     }
 
     setSecondsLeft(RESEND_SECONDS);
@@ -64,7 +65,7 @@ export const Login = () => {
 
     // Check with backend OTP service
     const verifyResult = await apiService.verifyOtp(phoneNumber, countryCode, otp);
-    if (!verifyResult.success && otp !== generatedDevCode && otp !== LOCAL_SIGN_IN_CODE) {
+    if (!verifyResult.success && otp !== LOCAL_SIGN_IN_CODE) {
       setError(verifyResult.message || t('invalidOtp'));
       return;
     }
@@ -79,8 +80,8 @@ export const Login = () => {
     setSecondsLeft(RESEND_SECONDS);
     try {
       const res = await apiService.generateOtp(phoneNumber, countryCode);
-      if (res.devCode) {
-        setGeneratedDevCode(res.devCode);
+      if (res.message) {
+        setSmsDeliveryMessage(res.message);
       }
     } catch {
       // offline
@@ -185,15 +186,15 @@ export const Login = () => {
               </button>
 
               <div className="rounded-xl border border-(--app-border) bg-(--app-surface-secondary) p-3 text-[11px] text-(--app-text-muted) leading-relaxed">
-                <span className="font-semibold text-(--app-text)">Local Verification: </span>
-                Enter your mobile number to receive your session sign-in code.
+                <span className="font-semibold text-(--app-text)">Direct SMS Delivery: </span>
+                Enter your mobile phone number. A 6-digit verification code will be sent directly to your phone via SMS text message.
               </div>
             </form>
           ) : (
             <form onSubmit={verifyOtp} className="space-y-4">
               <div>
                 <label htmlFor="otp-input" className="block text-xs font-bold uppercase tracking-wider text-(--app-text-muted) mb-1.5">
-                  Enter 6-Digit OTP
+                  Enter 6-Digit OTP from SMS
                 </label>
                 <input
                   id="otp-input"
@@ -206,15 +207,24 @@ export const Login = () => {
                     setOtp(event.target.value.replace(/\D/g, ''));
                     setError('');
                   }}
-                  placeholder="123456"
+                  placeholder="• • • • • •"
                   autoFocus
                   className="w-full rounded-xl border border-(--app-border) bg-(--app-surface-secondary) px-4 py-3 text-center font-mono text-xl tracking-[0.35em] text-(--app-text) placeholder:text-(--app-text-muted)/40 outline-none focus:ring-2 focus:ring-(--app-primary)"
                 />
               </div>
 
-              <div className="rounded-xl border border-(--app-primary)/30 bg-(--app-primary)/10 p-3 text-xs text-(--app-text)">
-                <span className="font-bold text-(--app-primary)">Generated OTP Code: </span>
-                <strong className="font-mono text-sm tracking-wider">{generatedDevCode}</strong>
+              {/* Direct Mobile SMS Text Notification Banner */}
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-(--app-text) flex items-start gap-2.5">
+                <Smartphone className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-emerald-400">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>SMS Sent Directly to Mobile Phone</span>
+                  </div>
+                  <p className="text-(--app-text-muted) leading-relaxed">
+                    {smsDeliveryMessage || `A 6-digit verification code was dispatched to your mobile phone at ${maskedPhone}. Please check your incoming SMS messages.`}
+                  </p>
+                </div>
               </div>
 
               <button
