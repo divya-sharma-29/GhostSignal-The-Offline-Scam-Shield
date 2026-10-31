@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { ShieldLogo } from './ShieldLogo';
-import { History, House, LogOut, Menu, ScanLine, ShieldCheck, X, Sparkles, Smartphone } from 'lucide-react';
+import { History, House, LogOut, Menu, ScanLine, ShieldCheck, X, Sparkles, Smartphone, Cpu } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../i18n';
 import { LanguageSelector } from './LanguageSelector';
@@ -13,10 +13,11 @@ export const Navbar: React.FC = () => {
   const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // 4 Primary destinations
+  // Primary destinations
   const links = [
     { to: '/', label: t('dashboard'), icon: House, end: true },
     { to: '/scanner', label: t('scanner'), icon: ScanLine },
+    { to: '/model-studio', label: 'Model Window', icon: Cpu },
     { to: '/history', label: t('history'), icon: History },
     { to: '/privacy', label: t('privacy'), icon: ShieldCheck }
   ];

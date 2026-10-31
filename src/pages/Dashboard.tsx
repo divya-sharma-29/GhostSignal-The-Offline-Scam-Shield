@@ -106,42 +106,65 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* Primary Actions: Scan Message button & Upload Screenshot action */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* Primary Actions: Scan Message, Upload Screenshot & Working Model Window */}
+      <div className="grid gap-4 sm:grid-cols-3">
         <Link
           to="/scanner"
           className="flex min-h-24 items-center justify-between gap-4 rounded-2xl bg-(--app-primary) p-5 text-(--app-on-primary) shadow-sm transition-all hover:opacity-95 active:scale-[0.99] group cursor-pointer"
         >
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-black/15 shrink-0">
-              <ScanLine className="h-6 w-6" />
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-black/15 shrink-0">
+              <ScanLine className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold">Scan Message</h2>
-              <p className="text-xs opacity-90 mt-0.5">
-                Check pasted text or SMS with local rules & Unicode Shield
+              <h2 className="text-sm sm:text-base font-bold">Scan Message</h2>
+              <p className="text-[11px] opacity-90 mt-0.5">
+                Pasted text or SMS analysis
               </p>
             </div>
           </div>
-          <ArrowRight className="h-5 w-5 shrink-0 transition-transform group-hover:translate-x-1" />
+          <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-1" />
         </Link>
 
         <Link
           to="/scanner?mode=screenshot"
           className="flex min-h-24 items-center justify-between gap-4 rounded-2xl border border-(--app-border) bg-(--app-card) p-5 text-(--app-text) shadow-2xs transition-all hover:border-(--app-primary) hover:bg-(--app-surface-secondary) group cursor-pointer"
         >
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-(--app-surface-secondary) text-(--app-primary) shrink-0">
-              <ImageUp className="h-6 w-6" />
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-(--app-surface-secondary) text-(--app-primary) shrink-0">
+              <ImageUp className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold">Upload Screenshot</h2>
-              <p className="text-xs text-(--app-text-muted) mt-0.5">
-                Inspect image preview and extract text with WinOCR engine
+              <h2 className="text-sm sm:text-base font-bold">Upload Screenshot</h2>
+              <p className="text-[11px] text-(--app-text-muted) mt-0.5">
+                WinOCR on-device extraction
               </p>
             </div>
           </div>
-          <ArrowRight className="h-5 w-5 shrink-0 text-(--app-text-muted) transition-transform group-hover:translate-x-1 group-hover:text-(--app-primary)" />
+          <ArrowRight className="h-4 w-4 shrink-0 text-(--app-text-muted) transition-transform group-hover:translate-x-1 group-hover:text-(--app-primary)" />
+        </Link>
+
+        <Link
+          to="/model-studio"
+          className="flex min-h-24 items-center justify-between gap-4 rounded-2xl border border-purple-500/30 bg-purple-500/10 p-5 text-(--app-text) shadow-2xs transition-all hover:border-purple-500 hover:bg-purple-500/15 group cursor-pointer"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-500/20 text-purple-600 dark:text-purple-400 shrink-0">
+              <Cpu className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-sm sm:text-base font-bold">Model Window</h2>
+                <span className="rounded-full bg-purple-500/20 text-purple-600 dark:text-purple-400 px-1.5 py-0.2 text-[9px] font-mono font-bold">
+                  LIVE
+                </span>
+              </div>
+              <p className="text-[11px] text-(--app-text-muted) mt-0.5">
+                SmolLM3-3B AI Studio
+              </p>
+            </div>
+          </div>
+          <ArrowRight className="h-4 w-4 shrink-0 text-purple-500 transition-transform group-hover:translate-x-1" />
         </Link>
       </div>
 
@@ -331,6 +354,15 @@ export const Dashboard = () => {
 
         {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-2.5 pt-1">
+          <Link
+            to="/model-studio"
+            className="inline-flex items-center gap-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 text-xs font-bold transition cursor-pointer shadow-sm"
+          >
+            <Cpu className="h-3.5 w-3.5" />
+            <span>Open Model Window</span>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
+
           <a
             href="https://colab.research.google.com/notebook#fileId=https%3A//huggingface.co/HuggingFaceTB/SmolLM3-3B.ipynb"
             target="_blank"

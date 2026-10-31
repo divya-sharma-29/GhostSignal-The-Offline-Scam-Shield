@@ -15,6 +15,7 @@ import { History } from './pages/History';
 import { Login } from './pages/Login';
 import { Privacy } from './pages/Privacy';
 import { Help } from './pages/Help';
+import { ModelStudio } from './pages/ModelStudio';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { QuickAssistant } from './components/QuickAssistant';
 import { LanguageProvider } from './i18n';
@@ -46,6 +47,8 @@ export default function App() {
                   <Route path="/analysis" element={<Analysis />} />
                   <Route path="/results" element={<Results />} />
                   <Route path="/history" element={<History />} />
+                  <Route path="/model-studio" element={<ModelStudio />} />
+                  <Route path="/model-window" element={<ModelStudio />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/help" element={<Help />} />
                   <Route path="*" element={<Navigate to="/" replace />} />

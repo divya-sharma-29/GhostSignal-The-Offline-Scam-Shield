@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { SAMPLE_MESSAGES } from '../data/sampleMessages';
 import { LANGUAGES, useLanguage, getVoiceMessageLabel } from '../i18n';
 import { analyzeMessageInput } from '../utils/riskEngine';
@@ -256,7 +256,7 @@ export const Scanner: React.FC = () => {
           {t('scannerDescription')}
         </p>
 
-        {/* Local AI Engine Status Pill */}
+        {/* Local AI Engine Status Pill & Model Window Link */}
         <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-(--app-border)/60">
           <div className="inline-flex items-center gap-2 rounded-full border border-(--app-primary)/30 bg-(--app-primary)/10 px-3 py-1 text-xs font-semibold text-(--app-primary)">
             <span className="relative flex h-2 w-2">
@@ -266,9 +266,20 @@ export const Scanner: React.FC = () => {
             <Cpu className="w-3.5 h-3.5 text-(--app-primary)" />
             <span>AI Engine: <strong>SmolLM3-3B Quantized</strong> (Offline Local AI)</span>
           </div>
-          <span className="text-[11px] font-mono text-(--app-text-muted)">
-            Unicode Shield · On-Device OCR · Mic Active
-          </span>
+
+          <div className="flex items-center gap-2">
+            <Link
+              to="/model-studio"
+              className="inline-flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-3 py-1 text-xs font-semibold text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 transition cursor-pointer"
+            >
+              <Cpu className="w-3.5 h-3.5" />
+              <span>Open Model Window</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+            <span className="text-[11px] font-mono text-(--app-text-muted) hidden sm:inline">
+              WinOCR · Mic Active
+            </span>
+          </div>
         </div>
       </div>
 
