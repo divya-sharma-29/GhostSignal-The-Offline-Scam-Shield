@@ -1,25 +1,91 @@
-"""Single FastAPI application for GhostSignal's server-side integrations."""
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+import sys
+from pathlib import Path
+
+# Ensure backend root is on sys.path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from backend.config import ALLOWED_ORIGINS
-from backend.database import initialize
-from backend.routes import auth_routes, history_routes, health_routes, ocr_routes, scan_routes, update_routes, url_routes
+import logging
+
+from config import settings
+from database import init_db
+from routes import (
+    health_router,
+    scan_router,
+    ocr_router,
+    url_router,
+    history_router,
+    update_router,
+    auth_router,
+    model_router
+)
+
+logging.basicConfig(
+    level=logging.INFO if not settings.DEBUG else logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger("ghostsignal_backend")
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI):
-    initialize()
+async def lifespan(app: FastAPI):
+    """Application startup & shutdown events."""
+    logger.info("Starting GhostSignal Backend Subsystems...")
+    init_db()
+    logger.info(f"GhostSignal database initialized successfully at {settings.DATABASE_URL}")
     yield
+    logger.info("GhostSignal Backend shutting down.")
 
-app = FastAPI(title="GhostSignal API", version="1.0.0", description="Privacy-conscious scam analysis and signed rules API", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS, allow_credentials=True, allow_methods=["GET", "POST", "DELETE"], allow_headers=["content-type", "accept"])
+app = FastAPI(
+    title=settings.APP_NAME,
+    description=(
+        "GhostSignal Privacy-Focused Scam Detection Backend. "
+        "Provides Unicode Shield normalization, threat detection, offline signed updates, "
+        "passive URL analysis, and local AI inference."
+    ),
+    version=settings.VERSION,
+    lifespan=lifespan
+)
 
-for router in (health_routes.router, scan_routes.router, url_routes.router, ocr_routes.router, history_routes.router, update_routes.router, auth_routes.router):
-    app.include_router(router)
-    app.include_router(router, prefix="/api")
+# Configure CORS for React frontend (localhost:3000, 127.0.0.1:3000, etc.)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
 
-@app.exception_handler(ValueError)
-async def invalid_input(_request, exc: ValueError):
-    return JSONResponse(status_code=400, content={"detail": str(exc)})
+# Register route modules
+app.include_router(health_router)
+app.include_router(scan_router)
+app.include_router(ocr_router)
+app.include_router(url_router)
+app.include_router(history_router)
+app.include_router(update_router)
+app.include_router(auth_router)
+app.include_router(model_router)
 
+# Safe Global Exception Handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception on {request.method} {request.url}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "InternalServerError",
+            "message": "An unexpected server error occurred. Your privacy and input were preserved.",
+            "details": str(exc) if settings.DEBUG else None
+        }
+    )
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=settings.DEBUG
+    )

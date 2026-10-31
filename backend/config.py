@@ -1,20 +1,50 @@
-"""Environment-backed configuration for the GhostSignal API."""
-from __future__ import annotations
-
-import os
 from pathlib import Path
+from typing import List
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = Path(os.getenv("GHOSTSIGNAL_DATA_DIR", str(BASE_DIR / "data"))).resolve()
-RULES_DIR = BASE_DIR / "rules"
-RULES_FILE = Path(os.getenv("GHOSTSIGNAL_RULES_FILE", str(RULES_DIR / "default_rules.json"))).resolve()
-DATABASE_FILE = Path(os.getenv("GHOSTSIGNAL_DATABASE", str(DATA_DIR / "ghostsignal.sqlite3"))).resolve()
-BACKUP_FILE = DATA_DIR / "last_known_good_rules.json"
-UPDATE_HISTORY_FILE = DATA_DIR / "update_history.json"
-MAX_TEXT_LENGTH = int(os.getenv("GHOSTSIGNAL_MAX_TEXT_LENGTH", "20000"))
-MAX_IMAGE_BYTES = int(os.getenv("GHOSTSIGNAL_MAX_IMAGE_BYTES", str(8 * 1024 * 1024)))
-TRUSTED_UPDATE_PUBLIC_KEY = os.getenv("GHOSTSIGNAL_UPDATE_PUBLIC_KEY", "")
-ALLOWED_ORIGINS = [origin.strip() for origin in os.getenv(
-    "GHOSTSIGNAL_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
-).split(",") if origin.strip()]
 
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(extra="allow", env_file=".env")
+
+    APP_NAME: str = "GhostSignal – The Offline Scam Shield"
+    VERSION: str = "2.4.0"
+    RULES_VERSION: str = "v2.4.0-offline"
+    DEBUG: bool = False
+    
+    # Server network settings
+    HOST: str = "0.0.0.0"
+    PORT: int = 8000
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://10.0.4.15:3000",
+    ]
+    
+    # Storage & Database
+    DATABASE_URL: str = f"sqlite:///{BASE_DIR / 'ghostsignal.db'}"
+    
+    # Paths for rules and cryptographic verification
+    RULES_DIR: Path = BASE_DIR / "rules"
+    DEFAULT_RULES_PATH: Path = BASE_DIR / "rules" / "default_rules.json"
+    BACKUP_RULES_PATH: Path = BASE_DIR / "rules" / "rules_backup.json"
+    UPDATES_DIR: Path = BASE_DIR / "rules" / "updates"
+    PUBLIC_KEY_PATH: Path = BASE_DIR / "rules" / "ed25519_public.pem"
+    
+    # AI Models
+    MODELS_DIR: Path = BASE_DIR / "models"
+    ONNX_MODEL_PATH: Path = BASE_DIR / "models" / "scam_classifier.onnx"
+    
+    # Upload limits (Images)
+    MAX_IMAGE_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB
+    ALLOWED_IMAGE_TYPES: List[str] = ["image/jpeg", "image/png", "image/jpg"]
+    
+    # OTP Authentication
+    OTP_LENGTH: int = 6
+    OTP_EXPIRY_SECONDS: int = 300  # 5 minutes
+    OTP_MAX_ATTEMPTS: int = 3
+    DEVELOPMENT_STATIC_OTP: str = "123456"
+
+settings = Settings()

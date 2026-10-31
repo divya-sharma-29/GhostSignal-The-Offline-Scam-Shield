@@ -1,14 +1,234 @@
 {
-  "version": "1.0.0",
-  "updated_at": null,
-  "rules": [
-    {"category":"otp","title":"OTP or credential request","patterns":["share your otp","send your otp","send otp","share otp","otp now","tell me the code","verification code","one time password","passcode"],"explanation":"The message asks for an authentication secret.","why_suspicious":"Legitimate support should not ask you to disclose a one-time code.","weight":50},
-    {"category":"upi","title":"UPI PIN or payment request","patterns":["upi pin","enter your pin","scan qr to receive","receive money","claim payment"],"explanation":"The message mentions a payment PIN or asks you to claim funds.","why_suspicious":"A UPI PIN authorizes a payment; it is not needed to receive money.","weight":32},
-    {"category":"urgency","title":"Urgency or account threat","patterns":["immediately","urgent","within 2 hours","within 24 hours","account blocked","account will be blocked","suspended","deactivated"],"explanation":"The message pressures you with a deadline or account consequence.","why_suspicious":"Urgency can discourage independent verification.","weight":25},
-    {"category":"kyc","title":"KYC or identity verification","patterns":["kyc update","verify kyc","kyc expired","update pan card","aadhaar verification"],"explanation":"The message requests identity or account verification.","why_suspicious":"Unexpected verification links can collect personal information.","weight":25},
-    {"category":"prize","title":"Prize or lottery claim","patterns":["you have won","claim your prize","lottery winner","cash prize","selected winner"],"explanation":"The message claims an unexpected prize.","why_suspicious":"Prize scams often demand fees or personal details to release winnings.","weight":30},
-    {"category":"payment","title":"Money transfer pressure","patterns":["send money","transfer now","pay processing fee","refund fee","gift card"],"explanation":"The message requests a payment or transfer.","why_suspicious":"Unexpected payment requests should be verified through a separate trusted channel.","weight":30},
-    {"category":"impersonation","title":"Support or organization impersonation","patterns":["customer support","bank official","police officer","customs department","delivery agent"],"explanation":"The sender claims an official or support role.","why_suspicious":"An unverified identity claim is not proof that a sender represents the organization.","weight":18}
+  "version": "v2.4.0-offline",
+  "updated_at": "2026-10-30T00:00:00Z",
+  "description": "GhostSignal Offline Scam Shield Default Rule Definition Package",
+  "categories": {
+    "urgency": {
+      "name": "Artificial Urgency & Panic",
+      "severity": "HIGH",
+      "weight": 25,
+      "patterns": [
+        "urgent",
+        "urgently",
+        "immediate",
+        "immediately",
+        "immediate action",
+        "security alert",
+        "within 24 hours",
+        "within 2 hours",
+        "within 1 hour",
+        "last reminder",
+        "last warning",
+        "will be blocked today",
+        "suspended tonight",
+        "terminated immediately",
+        "final notice"
+      ]
+    },
+    "kyc": {
+      "name": "Fake KYC Expiration & Verification",
+      "severity": "HIGH",
+      "weight": 35,
+      "patterns": [
+        "kyc",
+        "kyc expired",
+        "update kyc",
+        "kyc suspended",
+        "complete your kyc",
+        "pan card update",
+        "aadhaar verification",
+        "sim kyc",
+        "kyc document",
+        "unverified kyc",
+        "kyc update pending"
+      ]
+    },
+    "otp": {
+      "name": "OTP & Credential Harvesting",
+      "severity": "HIGH",
+      "weight": 40,
+      "patterns": [
+        "share otp",
+        "send otp",
+        "enter otp",
+        "forward otp",
+        "otp",
+        "one time password",
+        "verification code",
+        "secret code",
+        "security code to agent",
+        "verify your code"
+      ]
+    },
+    "upi": {
+      "name": "UPI PIN & Reverse Payment Fraud",
+      "severity": "HIGH",
+      "weight": 40,
+      "patterns": [
+        "upi pin",
+        "enter upi pin",
+        "enter your upi pin",
+        "enter upi pin to receive",
+        "upi pin for credit",
+        "scan qr code to receive",
+        "receive money",
+        "receive money upi pin",
+        "claim money enter pin",
+        "refund upi pin",
+        "phonepe reward pin",
+        "gpay scratch card enter pin"
+      ]
+    },
+    "payment_pressure": {
+      "name": "Payment Pressure & Blackmail Threats",
+      "severity": "MEDIUM",
+      "weight": 30,
+      "patterns": [
+        "electricity bill unpaid",
+        "power disconnect",
+        "challan pending",
+        "court warrant",
+        "police arrest notice",
+        "customs parcel fee",
+        "legal action initiate",
+        "fine of rs",
+        "penalty imposed"
+      ]
+    },
+    "impersonation": {
+      "name": "Institution & Brand Impersonation",
+      "severity": "MEDIUM",
+      "weight": 25,
+      "patterns": [
+        "state bank of india",
+        "sbi",
+        "sbi alert",
+        "bank security alert",
+        "bank security",
+        "bank",
+        "hdfc bank security",
+        "icici bank alert",
+        "rbi customer support",
+        "income tax refund",
+        "electricity officer",
+        "india post tracking",
+        "fedex parcel blocked",
+        "m-pesa support",
+        "paytm customer care"
+      ]
+    },
+    "lottery": {
+      "name": "Fake Lottery, Cashback & Job Offers",
+      "severity": "MEDIUM",
+      "weight": 20,
+      "patterns": [
+        "congratulations",
+        "you won",
+        "kbc lucky draw",
+        "lottery of 25 lakh",
+        "lottery",
+        "cashback credited",
+        "claim reward",
+        "part time job daily 5000",
+        "work from home like youtube",
+        "earn daily 10000"
+      ]
+    },
+    "link": {
+      "name": "Suspicious Link & APK Download",
+      "severity": "MEDIUM",
+      "weight": 20,
+      "patterns": [
+        "click here",
+        "download apk",
+        "install support app",
+        "anydesk",
+        "teamviewer quicksupport",
+        "rustdesk",
+        "update app link",
+        "bit.ly/",
+        "tinyurl.com/",
+        "is.gd/",
+        "t.co/"
+      ]
+    }
+  },
+  "high_risk_keywords": [
+    "kyc",
+    "otp",
+    "upi",
+    "paytm",
+    "sbi",
+    "bank",
+    "pan",
+    "aadhaar",
+    "block",
+    "verify",
+    "password",
+    "apk",
+    "reward",
+    "winner",
+    "lottery"
+  ],
+  "confusable_homoglyphs": {
+    "а": "a",
+    "с": "c",
+    "е": "e",
+    "о": "o",
+    "р": "p",
+    "ѕ": "s",
+    "х": "x",
+    "у": "y",
+    "і": "i",
+    "ј": "j",
+    "α": "a",
+    "ο": "o",
+    "ρ": "p",
+    "ν": "v",
+    "ａ": "a",
+    "ｂ": "b",
+    "ｃ": "c",
+    "ｄ": "d",
+    "ｅ": "e",
+    "ｆ": "f",
+    "ｇ": "g",
+    "ｈ": "h",
+    "ｉ": "i",
+    "ｊ": "j",
+    "ｋ": "k",
+    "ｌ": "l",
+    "ｍ": "m",
+    "ｎ": "n",
+    "ｏ": "o",
+    "ｐ": "p",
+    "ｑ": "q",
+    "ｒ": "r",
+    "ｓ": "s",
+    "ｔ": "t",
+    "ｕ": "u",
+    "ｖ": "v",
+    "ｗ": "w",
+    "ｘ": "x",
+    "ｙ": "y",
+    "ｚ": "z"
+  },
+  "suspicious_separators": [
+    "․",
+    "‧",
+    "．",
+    "۔",
+    "⁄",
+    "∕",
+    "⧸"
+  ],
+  "invisible_characters": [
+    "\u200B",
+    "\u200C",
+    "\u200D",
+    "\u00AD",
+    "\u2060",
+    "\u200E",
+    "\u200F",
+    "\uFEFF"
   ]
 }
-

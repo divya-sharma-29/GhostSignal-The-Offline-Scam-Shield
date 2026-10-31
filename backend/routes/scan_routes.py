@@ -1,35 +1,41 @@
-from datetime import datetime, timezone
-from uuid import uuid4
-from fastapi import APIRouter
-from backend.config import MAX_TEXT_LENGTH
-from backend.database import save_scan
-from backend.schemas import ScanResponse, TextScanRequest
-from backend.services.ai_engine import predict
-from backend.services.detector import detect
-from backend.services.risk_analyzer import analyze
-from backend.services.update_manager import read_rules
-from backend.services.url_analyzer import analyze_url
-import re
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
-router = APIRouter()
+from database import get_db
+from schemas import TextScanRequest, ScanResponseSchema
+from services.detector import scam_detector
+from services.history_manager import history_manager
 
-def run_scan(text: str, scan_type: str) -> dict:
-    if len(text) > MAX_TEXT_LENGTH:
-        raise ValueError("Text is longer than the configured limit.")
-    detected = detect(text)
-    urls = [analyze_url(match.group(0)) for match in re.finditer(r"(?:https?://|www\.)[^\s<>()]+", text, re.I)]
-    ai = predict(text)
-    risk = analyze(detected, urls, ai)
-    rules = read_rules()
-    result = {"id": str(uuid4()), "timestamp": datetime.now(timezone.utc).isoformat(), "scan_type": scan_type,
-        "message_text": text, "risk_level": risk["risk_level"], "risk_score": risk["risk_score"],
-        "threats": risk["threats"], "reasons": risk["reasons"], "recommendations": risk["recommendations"],
-        "unicode_findings": detected["normalization"]["findings"], "normalized_for_analysis": detected["normalization"]["normalized"],
-        "rule_version": rules.get("version", "unknown"), "ai_status": ai["mode"]}
-    save_scan(result)
+router = APIRouter(prefix="/scan", tags=["Scanning"])
+
+@router.post("/text", response_model=ScanResponseSchema)
+def scan_text(request: TextScanRequest, db: Session = Depends(get_db)):
+    """
+    Scans a submitted text message through the unified GhostSignal security pipeline:
+    1. Unicode Shield Character Normalization (homoglyphs, invisibles, dotted spellings, Indic preservation)
+    2. Threat Pattern Matching (KYC, OTP, UPI reverse payment, urgency, extortion, impersonation)
+    3. Passive URL extraction & static link risk analysis
+    4. Local AI classification
+    5. Calibrated Risk Analysis
+    6. Anonymous SQLite Scan History Record
+    """
+    clean_text = request.text.strip()
+    if not clean_text:
+        raise HTTPException(status_code=400, detail="Text field must not be empty.")
+
+    # Execute scam detector
+    result = scam_detector.scan(
+        text=clean_text,
+        language=request.language or "English",
+        source_type=request.source_type or "text"
+    )
+
+    # Save to SQLite history
+    try:
+        history_manager.save_scan(db, result)
+    except Exception as e:
+        # Scan must never fail if DB write has a transient issue
+        print(f"[ScanRoutes] Warning: Failed to save scan history: {e}")
+
     return result
-
-@router.post("/scan/text", response_model=ScanResponse)
-def scan_text(request: TextScanRequest):
-    return run_scan(request.text, "text")
 

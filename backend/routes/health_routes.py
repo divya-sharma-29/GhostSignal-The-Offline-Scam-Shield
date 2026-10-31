@@ -1,27 +1,64 @@
-from fastapi import APIRouter
-from importlib.util import find_spec
-from backend.services.ai_engine import status as ai_status
-from backend.services.update_manager import status as update_status
-from backend.services.ocr_engine import ALLOWED_TYPES
-from backend.database import initialize
+from fastapi import APIRouter, Depends
+from datetime import datetime, timezone
+from sqlalchemy.orm import Session
+from sqlalchemy import text
 
-router = APIRouter()
+from config import settings
+from database import get_db
+from schemas import SystemStatusResponse
+from services.ai_engine import ai_engine
+from services.ocr_engine import ocr_engine
+
+router = APIRouter(tags=["Health & Status"])
 
 @router.get("/")
 def root():
-    return {"service": "GhostSignal API", "status": "ok", "docs": "/docs"}
+    return {
+        "name": settings.APP_NAME,
+        "tagline": "Your messages. Your privacy. Your protection.",
+        "status": "online",
+        "version": settings.VERSION,
+        "rule_version": settings.RULES_VERSION,
+        "documentation": "/docs"
+    }
 
 @router.get("/health")
-def health():
-    try:
-        initialize(); database = "available"
-    except Exception:
-        database = "unavailable"
-    return {"status": "ok" if database == "available" else "degraded", "database": database}
+def health_check():
+    return {
+        "status": "healthy",
+        "service": "ghostsignal_backend",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
 
-@router.get("/system/status")
-def system_status():
-    try: initialize(); database = "available"
-    except Exception: database = "unavailable"
-    return {"database": database, "ocr": "available" if find_spec("easyocr") and find_spec("PIL") else "optional; not installed", "ai": ai_status(), "updates": update_status()}
+@router.get("/system/status", response_model=SystemStatusResponse)
+def system_status(db: Session = Depends(get_db)):
+    """
+    Returns the operational availability of all internal subsystems:
+    Database, AI Classifier, OCR Engine, Security Update signatures, and Offline Mode.
+    """
+    # Check Database connection
+    db_ok = False
+    try:
+        db.execute(text("SELECT 1"))
+        db_ok = True
+    except Exception:
+        db_ok = False
+
+    return SystemStatusResponse(
+        backend="FastAPI Python Modular Backend",
+        version=settings.VERSION,
+        ruleVersion=settings.RULES_VERSION,
+        databaseAvailable=db_ok,
+        aiEngineAvailable=True,
+        aiModelLoaded=ai_engine.is_model_loaded,
+        ocrEngineAvailable=bool(ocr_engine.engine_type),
+        offlineModeSupported=True,
+        details={
+            "aiEngineType": "ONNX (CPU)" if ai_engine.is_model_loaded else "Local Rule Fallback",
+            "ocrEngineType": ocr_engine.engine_type or "Validation Only (Install Tesseract for OCR)",
+            "databaseType": "SQLite (Local File-based)",
+            "signatureAlgorithm": "Ed25519 Cryptographic Verification",
+            "offlineReadiness": "Full Client & Server Offline Execution Compatible"
+        }
+    )
 
