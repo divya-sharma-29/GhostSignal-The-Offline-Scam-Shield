@@ -1,4 +1,12 @@
 import pytest
+import sys
+from pathlib import Path
+
+# Add backend directory to sys.path
+backend_dir = str(Path(__file__).resolve().parent.parent)
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
 from services.ai_engine import ai_engine
 from services.smollm3_reasoner import smollm3_reasoner
 from services.detector import scam_detector
